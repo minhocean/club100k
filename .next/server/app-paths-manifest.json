@@ -1,0 +1,4 @@
+{
+  "/api/strava/athlete-activities/route": "app/api/strava/athlete-activities/route.js",
+  "/stats/page": "app/stats/page.js"
+}

@@ -1,0 +1,33 @@
+Hãy tìm nguyên nhân lỗi sau khi bấm F12 ở trình duyệt : Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+
+Sửa chương trình để in ra các biến STRAVA khi bất kỳ module nào có dùng đến biến này
+
+update these code to project
+
+tôi thấy biến STRAVA không được đọc đúng mặc dù đã được thiết lập trong file .env.local
+
+{"error":"Invalid session"} display on browser please fix it
+
+after connect to Strava the url display ?strava_error=store_failed, please fixt it
+
+very good, after user connect success to strava display button to display activities from strava.
+
+@StravaConnect.js Hãy sửa lại để lấy được thông tin sau từ strava: Mã người dùng, Tên người dùng, Số km,  Tốc độ trung bình, Số phút hoạt động, Ngày phát sinh hoạt động, Giờ bắt đầu, Giờ kết thúc, loại hoạt động, Địa điểm hoạt động
+
+@StravaConnect.js Hãy chuyển đổi hiển thị các hoạt động thành dạng bảng sắ xếp theo thứ tự thời gian từ ngày gần nhất đến ngày thấp nhất
+
+Trường tên người dùng lấy Tên người khi login bằng email google
+
+tôi không thấy hiển thị Tên đúng mà lại hiển thị N/A
+
+@StravaConnect.js Hãy bỏ trường địa điểm. Thêm phân trang . Tham số phân được người dùng gõ vào trên giao diện. Thêm hàng tổng số km ở cuối mỗi tháng., nếu số km<100 thì in màu đỏ.
+
+@StravaConnect.js Hãy sửa cho phép người sử dụng chọn hoảng thời gian từ ngày đến ngày để lấy dư liệu từ Strava. Mặc định Từ ngày là ngày đầu tiên cách tháng hiện tại 12 tháng, Đến ngày là ngày hiện tại.
+
+Tôi muốn thêm 01 Nút bấm cho phép đồng bộ dữ liệu từ Strava  vào cơ sở dũ liệu, tham số đồng bộ lấy  2 trường Date picker đã tạo ở trên. Hãy tạo script tạo bảng trong cơ sở dữ liệu để lưu được các hoạt động này.
+
+Khi bấm vào nút đồng bộ thì hiển thị lỗi như sau: Lỗi: Failed to execute 'json' on 'Response': Unexpected end of JSON input
+
+[dotenv@17.2.2] injecting env (0) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }. Hãy hướng dẫn cách enable debug
+
+Hãy kết xuất các prompt tôi đang nhập ra 01 file tên là prompt.txt
