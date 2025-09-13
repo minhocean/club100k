@@ -174,12 +174,42 @@ export default function WebhookSetup({ user }) {
     }
   }
 
+  const forceDeleteAll = async () => {
+    setLoading(true)
+    setError('')
+    setMessage('')
+    
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session?.data?.session?.access_token
+      
+      if (!token) return
+
+      const res = await fetch(`/api/strava/webhook-setup?sb=${encodeURIComponent(token)}`, {
+        method: 'PATCH'
+      })
+      const data = await res.json()
+      
+      if (res.ok) {
+        setMessage(`Đã force xóa tất cả webhook: ${data.message}`)
+        await checkWebhookStatus() // Refresh status
+      } else {
+        setError(data.error || 'Failed to force delete all webhooks')
+      }
+    } catch (error) {
+      console.error('Error force deleting all webhooks:', error)
+      setError('Failed to force delete all webhooks')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!user) return null
 
   return (
     <div style={{ marginTop: '16px', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
-        🔗 Thiết lập Webhook Real-time 4
+        🔗 Thiết lập Webhook Real-time 5
       </h4>
       
       <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
@@ -366,6 +396,23 @@ export default function WebhookSetup({ user }) {
           }}
         >
           🔥 Force Cleanup & Tạo mới
+        </button>
+
+        <button
+          onClick={forceDeleteAll}
+          disabled={loading}
+          style={{
+            backgroundColor: '#6f42c1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '6px 12px',
+            fontSize: '12px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.6 : 1
+          }}
+        >
+          💀 Force Xóa TẤT CẢ
         </button>
       </div>
 
