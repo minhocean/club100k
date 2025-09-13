@@ -100,8 +100,8 @@ export default function Home() {
   return (
     <div className="container">
       <div className="card">
-        <h1 className="title">🚀 GeminiSport</h1>
-        <p className="subtitle">Đăng nhập để tiếp tục</p>
+        <h1 className="title">🚀 Clb100kSport</h1>
+        <p className="subtitle">Đăng nhập Google để tiếp tục</p>
         
         <button className="login-button" onClick={handleGoogleLogin}>
           <svg width="20" height="20" viewBox="0 0 24 24">
