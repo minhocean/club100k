@@ -137,6 +137,28 @@ export async function POST(request) {
             already_exists: true
           })
         }
+
+        // If there's a different webhook, delete it first
+        if (existingSubscriptions.length > 0) {
+          console.log(`[WEBHOOK_SETUP] Found ${existingSubscriptions.length} existing webhook(s), deleting them first`)
+          for (const sub of existingSubscriptions) {
+            try {
+              await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  client_id: STRAVA.CLIENT_ID,
+                  client_secret: STRAVA.CLIENT_SECRET
+                })
+              })
+              console.log(`[WEBHOOK_SETUP] Deleted existing webhook ${sub.id}`)
+            } catch (error) {
+              console.warn(`[WEBHOOK_SETUP] Failed to delete webhook ${sub.id}:`, error.message)
+            }
+          }
+        }
       }
 
       // Create webhook subscription
