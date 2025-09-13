@@ -188,15 +188,8 @@ export async function POST(request) {
           console.log(`[WEBHOOK_SETUP] Found ${activeWebhooks.length} active webhook(s), deleting them first`)
           for (const sub of activeWebhooks) {
             try {
-              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                  client_id: STRAVA.CLIENT_ID,
-                  client_secret: STRAVA.CLIENT_SECRET
-                })
+              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`, {
+                method: 'DELETE'
               })
               
               if (deleteResponse.ok) {
@@ -331,15 +324,8 @@ export async function PUT(request) {
           // Delete ALL existing webhooks
           for (const sub of subscriptions) {
             try {
-              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                  client_id: STRAVA.CLIENT_ID,
-                  client_secret: STRAVA.CLIENT_SECRET
-                })
+              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`, {
+                method: 'DELETE'
               })
               
               if (deleteResponse.ok) {
@@ -477,15 +463,8 @@ export async function PATCH(request) {
           
           while (deleteAttempts < maxDeleteAttempts) {
             try {
-              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                  client_id: STRAVA.CLIENT_ID,
-                  client_secret: STRAVA.CLIENT_SECRET
-                })
+              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`, {
+                method: 'DELETE'
               })
               
               if (deleteResponse.ok) {
@@ -572,15 +551,8 @@ export async function DELETE(request) {
 
     try {
       // Delete webhook subscription
-      const response = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${subscriptionId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: STRAVA.CLIENT_ID,
-          client_secret: STRAVA.CLIENT_SECRET
-        })
+      const response = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${subscriptionId}?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`, {
+        method: 'DELETE'
       })
 
       if (!response.ok) {

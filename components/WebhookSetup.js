@@ -209,7 +209,7 @@ export default function WebhookSetup({ user }) {
   return (
     <div style={{ marginTop: '16px', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
-        🔗 Thiết lập Webhook Real-time 5
+        🔗 Thiết lập Webhook Real-time 7
       </h4>
       
       <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
