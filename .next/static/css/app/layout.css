@@ -541,6 +541,12 @@ video {
 .fixed {
   position: fixed;
 }
+.absolute {
+  position: absolute;
+}
+.relative {
+  position: relative;
+}
 .inset-0 {
   inset: 0px;
 }

@@ -143,14 +143,16 @@ export async function GET(request) {
           return Math.min(Math.max(num, 0), maxValue)
         }
 
-        // Helper function to safely handle lat/lng values (precision 10, scale 8 issue)
+        // Helper function to safely handle lat/lng values (precision 12, scale 8)
         const safeLatLng = (value) => {
           if (value === null || value === undefined) return null
           const num = parseFloat(value)
           if (isNaN(num)) return null
-          // For lat/lng, we need to ensure the value fits in DECIMAL(10,8)
-          // This means max value is 99.99999999
-          return Math.min(Math.max(num, -99.99999999), 99.99999999)
+          // For lat/lng, we need to ensure the value fits in DECIMAL(12,8)
+          // Latitude: -90 to 90, Longitude: -180 to 180
+          // DECIMAL(12,8) means max value is 9999.99999999
+          // So we can handle all valid lat/lng values
+          return Math.min(Math.max(num, -9999.99999999), 9999.99999999)
         }
 
         // Validation function to check if activity is valid based on Pace and distance
@@ -228,8 +230,8 @@ export async function GET(request) {
           gear_id: activity.gear_id,
           device_name: activity.device_name,
           embed_token: activity.embed_token,
-          splits_metric: activity.splits_metric,
-          splits_default: activity.splits_default,
+          splits_metric: activity.splits_metric || null,
+          splits_default: activity.splits_default || null,
           has_heartrate: activity.has_heartrate,
           has_kudoed: activity.has_kudoed,
           is_valid: validation.isValid,

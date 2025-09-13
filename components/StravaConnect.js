@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import ActivityNotifications from './ActivityNotifications'
+import WebhookSetup from './WebhookSetup'
 
 export default function StravaConnect({ user }) {
   const [status, setStatus] = useState({ loading: true, connected: false })
@@ -15,7 +17,7 @@ export default function StravaConnect({ user }) {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [syncing, setSyncing] = useState(false)
-  const [syncMessage, setSyncMessage] = useState('')``
+  const [syncMessage, setSyncMessage] = useState('')
   const [dbActivities, setDbActivities] = useState([])
   const [loadingDb, setLoadingDb] = useState(false)
   const [showDbData, setShowDbData] = useState(false)
@@ -26,28 +28,27 @@ export default function StravaConnect({ user }) {
   const [athletesLoading, setAthletesLoading] = useState(false)
   const [selectedAthletes, setSelectedAthletes] = useState([])
 
-  useEffect(() => {
-    const today = new Date()
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(today.getMonth() - 3)
-
-    setDateFrom(threeMonthsAgo.toISOString().split('T')[0])
-    setDateTo(today.toISOString().split('T')[0])
-    
-    const check = async () => {
+  const checkStravaStatus = async () => {
+    try {
+      console.log('[DEBUG] Starting checkStravaStatus...')
       const session = await supabase.auth.getSession()
+      console.log('[DEBUG] Session data:', session)
       const token = session?.data?.session?.access_token
       const user = session?.data?.session?.user
       
+      console.log('[DEBUG] Token present:', !!token)
+      console.log('[DEBUG] Token preview:', token ? token.substring(0, 20) + '...' : 'null')
+      console.log('[DEBUG] User present:', !!user)
+      
       // Get Google user name from props or session
       if (user) {
-        console.log('User data from props:', user)
-        console.log('User metadata:', user.user_metadata)
+        console.log('[DEBUG] User data from props:', user)
+        console.log('[DEBUG] User metadata:', user.user_metadata)
         const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Người dùng'
-        console.log('Extracted name:', fullName)
+        console.log('[DEBUG] Extracted name:', fullName)
         setUserName(fullName)
       } else {
-        console.log('No user found in props, checking session')
+        console.log('[DEBUG] No user found in props, checking session')
         const sessionUser = session?.data?.session?.user
         if (sessionUser) {
           const fullName = sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'Người dùng'
@@ -55,13 +56,26 @@ export default function StravaConnect({ user }) {
         }
       }
       
+      console.log('[DEBUG] Making request to /api/strava/status...')
       const res = await fetch(`/api/strava/status?sb=${encodeURIComponent(token || '')}`)
+      console.log('[DEBUG] Status response status:', res.status)
+      console.log('[DEBUG] Status response headers:', Object.fromEntries(res.headers.entries()))
+      
       const json = await res.json()
+      console.log('[DEBUG] Strava status check result:', json)
+      
+      if (json.error) {
+        console.error('[DEBUG] Strava status error:', json.error)
+        setError(`Lỗi kiểm tra trạng thái: ${json.error}`)
+      }
+      
+      console.log('[DEBUG] Setting status with connected:', !!json.connected)
       setStatus({ 
         loading: false, 
         connected: !!json.connected, 
         athleteId: json.athleteId,
-        athleteName: json.athleteName 
+        athleteName: json.athleteName,
+        expired: json.expired || false
       })
 
       try {
@@ -71,16 +85,71 @@ export default function StravaConnect({ user }) {
         const list = Array.isArray(statsJson.athletes) ? statsJson.athletes.map(a => ({ id: a.athlete_id, name: a.athlete_name })) : []
         setAthletes(list)
       } catch (e) {
+        console.log('[DEBUG] Error loading athletes:', e)
       } finally {
         setAthletesLoading(false)
       }
+    } catch (error) {
+      console.error('[DEBUG] Error checking Strava status:', error)
+      setStatus({ loading: false, connected: false })
     }
-    check()
+  }
+
+  useEffect(() => {
+    const today = new Date()
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(today.getMonth() - 3)
+
+    setDateFrom(threeMonthsAgo.toISOString().split('T')[0])
+    setDateTo(today.toISOString().split('T')[0])
+    
+    // Check for Strava connection success/error in URL parameters
+    const urlParams = new URLSearchParams(window.location.search)
+    const stravaConnected = urlParams.get('strava_connected')
+    const stravaError = urlParams.get('strava_error')
+    
+    if (stravaConnected === '1') {
+      console.log('Strava connection successful, refreshing status...')
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (stravaError) {
+      console.error('Strava connection error:', stravaError)
+      setError(`Lỗi kết nối Strava: ${stravaError}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+    
+    checkStravaStatus()
+  }, [])
+
+  // Add effect to refresh status when URL parameters change
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const stravaConnected = urlParams.get('strava_connected')
+    
+    if (stravaConnected === '1') {
+      // Force refresh the status check with a small delay to ensure DB is updated
+      setTimeout(() => {
+        console.log('Refreshing Strava status after successful connection...')
+        checkStravaStatus()
+      }, 1000)
+    }
   }, [])
 
   const handleConnect = async () => {
+    console.log('[DEBUG] Starting Strava connection process...')
     const session = await supabase.auth.getSession()
     const token = session?.data?.session?.access_token
+    console.log('[DEBUG] Session for connection:', session)
+    console.log('[DEBUG] Token for connection:', token ? token.substring(0, 20) + '...' : 'null')
+    
+    if (!token) {
+      console.error('[DEBUG] No token available for Strava connection')
+      setError('Không có token xác thực. Vui lòng đăng nhập lại.')
+      return
+    }
+    
+    console.log('[DEBUG] Redirecting to Strava authorization...')
     window.location.href = `/api/strava/start?sb=${encodeURIComponent(token || '')}`
   }
 
@@ -287,9 +356,25 @@ export default function StravaConnect({ user }) {
     return (
       <div className="user-info" style={{ marginTop: 16 }}>
         <h3>Strava</h3>
-        <div className="info-item">
+        <div className="info-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="info-label">Trạng thái:</span>
-          <span className="info-value">Đã kết nối</span>
+          <span className="info-value" style={{ color: status.expired ? '#dc3545' : '#28a745' }}>
+            {status.expired ? 'Token hết hạn' : 'Đã kết nối'}
+          </span>
+          <button 
+            onClick={status.expired ? handleConnect : checkStravaStatus}
+            style={{
+              padding: '4px 8px',
+              fontSize: '12px',
+              backgroundColor: status.expired ? '#dc3545' : '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {status.expired ? 'Kết nối lại' : 'Làm mới'}
+          </button>
         </div>
         {status.athleteId && (
           <div className="info-item">
@@ -303,6 +388,21 @@ export default function StravaConnect({ user }) {
             <span className="info-value">{status.athleteName}</span>
           </div>
         )}
+        {status.expired && (
+          <div style={{ 
+            marginTop: '8px', 
+            padding: '8px', 
+            backgroundColor: '#f8d7da', 
+            border: '1px solid #f5c6cb', 
+            borderRadius: '4px',
+            color: '#721c24',
+            fontSize: '12px'
+          }}>
+            ⚠️ Token Strava đã hết hạn. Vui lòng nhấn "Kết nối lại" để cập nhật.
+          </div>
+        )}
+        <ActivityNotifications user={user} />
+        <WebhookSetup user={user} />
         {/* Athlete multi-select */}
         <div style={{ marginTop: 12 }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: 8 }}>Chọn vận động viên để đồng bộ</div>
@@ -685,7 +785,7 @@ export default function StravaConnect({ user }) {
                   {getDbPaginatedActivities()
                     .sort((a, b) => new Date(b.activity_date.split('/').reverse().join('-')) - new Date(a.activity_date.split('/').reverse().join('-')))
                     .map((activity, idx) => {
-                      const isInvalid = !activity.is_valid || activity.is_valid === FALSE
+                      const isInvalid = activity.is_valid === false
                       return (
                         <tr key={idx} style={{ 
                           //backgroundColor: isInvalid ? '#ffebee' : (idx % 2 === 0 ? '#fafafa' : 'white'),
@@ -835,5 +935,3 @@ export default function StravaConnect({ user }) {
     </button>
   )
 }
-
-

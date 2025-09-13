@@ -1,0 +1,81 @@
+PATCH cho components/StravaConnect.js
+
+1. Thêm logic kiểm tra URL parameters vào useEffect đầu tiên (sau dòng 37):
+
+```javascript
+    setDateFrom(threeMonthsAgo.toISOString().split('T')[0])
+    setDateTo(today.toISOString().split('T')[0])
+    
+    // Check for Strava connection success/error in URL parameters
+    const urlParams = new URLSearchParams(window.location.search)
+    const stravaConnected = urlParams.get('strava_connected')
+    const stravaError = urlParams.get('strava_error')
+    
+    if (stravaConnected === '1') {
+      console.log('Strava connection successful, refreshing status...')
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (stravaError) {
+      console.error('Strava connection error:', stravaError)
+      setError(`Lỗi kết nối Strava: ${stravaError}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+    
+    const check = async () => {
+```
+
+2. Thêm logging vào hàm check (sau dòng 60):
+
+```javascript
+      const res = await fetch(`/api/strava/status?sb=${encodeURIComponent(token || '')}`)
+      const json = await res.json()
+      console.log('Strava status check result:', json)
+      setStatus({ 
+        loading: false, 
+        connected: !!json.connected, 
+        athleteId: json.athleteId,
+        athleteName: json.athleteName 
+      })
+```
+
+3. Thêm useEffect mới sau useEffect hiện tại (sau dòng 81):
+
+```javascript
+  }, [])
+
+  // Add effect to refresh status when URL parameters change
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const stravaConnected = urlParams.get('strava_connected')
+    
+    if (stravaConnected === '1') {
+      // Force refresh the status check
+      const refreshStatus = async () => {
+        try {
+          const session = await supabase.auth.getSession()
+          const token = session?.data?.session?.access_token
+          
+          if (token) {
+            const res = await fetch(`/api/strava/status?sb=${encodeURIComponent(token)}`)
+            const json = await res.json()
+            console.log('Refreshed Strava status after callback:', json)
+            setStatus({ 
+              loading: false, 
+              connected: !!json.connected, 
+              athleteId: json.athleteId,
+              athleteName: json.athleteName 
+            })
+          }
+        } catch (error) {
+          console.error('Error refreshing status:', error)
+        }
+      }
+      
+      refreshStatus()
+    }
+  }, [window.location.search])
+
+  const handleConnect = async () => {
+```
+

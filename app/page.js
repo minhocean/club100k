@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import LandingPage from '../components/LandingPage'
+import DebugInfo from '../components/DebugInfo'
 
 export default function Home() {
   const [user, setUser] = useState(null)
@@ -88,7 +89,12 @@ export default function Home() {
   }
 
   if (user) {
-    return <LandingPage user={user} onLogout={handleLogout} />
+    return (
+      <div>
+        <DebugInfo />
+        <LandingPage user={user} onLogout={handleLogout} />
+      </div>
+    )
   }
 
   return (

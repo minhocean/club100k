@@ -106,12 +106,14 @@ export default function LandingPage({ user, onLogout }) {
             >
               Thống kê
             </button>
-            <button 
-              className={`nav-tab ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
-            >
-              Hồ sơ
-            </button>
+            {user.email === 'rongcatlinh@gmail.com' && (
+              <button 
+                className={`nav-tab ${activeTab === 'profile' ? 'active' : ''}`}
+                onClick={() => setActiveTab('profile')}
+              >
+                Hồ sơ
+              </button>
+            )}
           </nav>
           <div className="user-menu">
             <span className="user-name">

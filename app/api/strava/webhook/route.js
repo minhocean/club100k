@@ -102,43 +102,103 @@ export async function POST(request) {
       }
       const a = await actResp.json()
 
-      // Prepare data similar to sync route minimal fields
+      // Helper functions for data validation (same as sync route)
+      const safeNumeric = (value, maxValue = 999999999999) => {
+        if (value === null || value === undefined) return null
+        const num = parseFloat(value)
+        if (isNaN(num)) return null
+        return Math.min(Math.max(num, 0), maxValue)
+      }
+
+      const safeLatLng = (value) => {
+        if (value === null || value === undefined) return null
+        const num = parseFloat(value)
+        if (isNaN(num)) return null
+        // For lat/lng, we need to ensure the value fits in DECIMAL(12,8)
+        // DECIMAL(12,8) means max value is 9999.99999999
+        // So we can handle all valid lat/lng values
+        return Math.min(Math.max(num, -9999.99999999), 9999.99999999)
+      }
+
+      // Validation function to check if activity is valid based on Pace and distance
+      const validateActivity = (activity) => {
+        const distanceKm = activity.distance ? activity.distance / 1000 : 0
+        const timeMinutes = activity.moving_time ? activity.moving_time / 60 : 0
+        const pace = distanceKm > 0 && timeMinutes > 0 ? timeMinutes / distanceKm : 0
+
+        // Hoạt động hợp lệ: (Pace >= 3 và Pace <= 13) và (quãng đường >= 3km và quãng đường <= 15km)
+        const isValidPace = pace >= 3 && pace <= 13
+        const isValidDistance = distanceKm >= 3 && distanceKm <= 15
+        const isValid = isValidPace && isValidDistance
+
+        console.log(`[STRAVA_WEBHOOK] Activity ${activity.id}: Pace=${pace.toFixed(2)} min/km, Distance=${distanceKm.toFixed(2)}km, Valid=${isValid}`)
+
+        return {
+          isValid: isValid,
+          pace: pace,
+          distanceKm: distanceKm,
+          reason: !isValid ? 
+            `Invalid activity: Pace=${pace.toFixed(2)} min/km (valid: 3-13), Distance=${distanceKm.toFixed(2)}km (valid: 3-15km)` :
+            `Valid activity: Pace=${pace.toFixed(2)} min/km, Distance=${distanceKm.toFixed(2)}km`
+        }
+      }
+
+      // Validate activity data
+      const validation = validateActivity(a)
+
+      // Prepare comprehensive activity data (same structure as sync route)
       const activityData = {
         user_id: conn.user_id,
         strava_activity_id: a.id,
         athlete_id: owner_id,
         name: a.name,
-        sport_type: a.sport_type || a.type,
+        sport_type: a.sport_type,
         activity_type: a.type,
-        distance: a.distance ?? null,
-        moving_time: a.moving_time ?? null,
-        elapsed_time: a.elapsed_time ?? null,
-        total_elevation_gain: a.total_elevation_gain ?? null,
-        average_speed: a.average_speed ?? null,
-        max_speed: a.max_speed ?? null,
-        average_cadence: a.average_cadence ?? null,
-        average_watts: a.average_watts ?? null,
-        weighted_average_watts: a.weighted_average_watts ?? null,
-        kilojoules: a.kilojoules ?? null,
-        average_heartrate: a.average_heartrate ?? null,
-        max_heartrate: a.max_heartrate ?? null,
-        calories: a.calories ?? null,
+        distance: safeNumeric(a.distance, 999999999999999),
+        moving_time: a.moving_time,
+        elapsed_time: a.elapsed_time,
+        total_elevation_gain: safeNumeric(a.total_elevation_gain, 999999999999),
+        average_speed: safeNumeric(a.average_speed, 999999999999),
+        max_speed: safeNumeric(a.max_speed, 999999999999),
+        average_cadence: safeNumeric(a.average_cadence, 999999),
+        average_watts: safeNumeric(a.average_watts, 999999999999),
+        weighted_average_watts: safeNumeric(a.weighted_average_watts, 999999999999),
+        kilojoules: safeNumeric(a.kilojoules, 999999999999),
+        average_heartrate: safeNumeric(a.average_heartrate, 999999),
+        max_heartrate: safeNumeric(a.max_heartrate, 999999),
+        calories: safeNumeric(a.calories, 999999999999),
         start_date: a.start_date,
         start_date_local: a.start_date_local,
         timezone: a.timezone,
-        utc_offset: a.utc_offset ?? null,
+        utc_offset: a.utc_offset,
         location_city: a.location_city,
         location_state: a.location_state,
         location_country: a.location_country,
-        start_latlng: Array.isArray(a.start_latlng) ? a.start_latlng : null,
-        end_latlng: Array.isArray(a.end_latlng) ? a.end_latlng : null,
-        has_heartrate: a.has_heartrate ?? null,
-        workout_type: a.workout_type ?? null,
-        embed_token: a.embed_token ?? null,
-        gear_id: a.gear_id ?? null,
-        device_name: a.device_name ?? null,
-        updated_at: new Date().toISOString(),
-        synced_at: new Date().toISOString(),
+        start_latlng: a.start_latlng ? a.start_latlng.map(coord => safeLatLng(coord)) : null,
+        end_latlng: a.end_latlng ? a.end_latlng.map(coord => safeLatLng(coord)) : null,
+        achievement_count: a.achievement_count,
+        kudos_count: a.kudos_count,
+        comment_count: a.comment_count,
+        athlete_count: a.athlete_count,
+        pr_count: a.pr_count,
+        trainer: a.trainer,
+        commute: a.commute,
+        manual: a.manual,
+        private: a.private,
+        flagged: a.flagged,
+        workout_type: a.workout_type,
+        external_id: a.external_id,
+        upload_id: a.upload_id,
+        description: a.description,
+        gear_id: a.gear_id,
+        device_name: a.device_name,
+        embed_token: a.embed_token,
+        splits_metric: a.splits_metric || null,
+        splits_default: a.splits_default || null,
+        has_heartrate: a.has_heartrate,
+        has_kudoed: a.has_kudoed,
+        is_valid: validation.isValid,
+        synced_at: new Date().toISOString()
       }
 
       const { error: upErr } = await supabaseAdmin
@@ -147,9 +207,41 @@ export async function POST(request) {
 
       if (upErr) {
         console.error('[STRAVA_WEBHOOK] upsert error', upErr)
+        return NextResponse.json({ error: 'database_error', details: upErr.message }, { status: 200 })
       }
 
-      return NextResponse.json({ ok: true }, { status: 200 })
+      // Log successful sync with validation details
+      console.log(`[STRAVA_WEBHOOK] Successfully synced activity ${a.id} for athlete ${owner_id}: ${validation.reason}`)
+      
+      // Optional: Store notification for user (if you want to show real-time notifications)
+      try {
+        await supabaseAdmin
+          .from('activity_notifications')
+          .insert({
+            user_id: conn.user_id,
+            athlete_id: owner_id,
+            activity_id: a.id,
+            activity_name: a.name,
+            distance_km: validation.distanceKm,
+            pace_min_per_km: validation.pace,
+            is_valid: validation.isValid,
+            created_at: new Date().toISOString()
+          })
+          .catch(() => {
+            // Ignore if notifications table doesn't exist
+            console.log('[STRAVA_WEBHOOK] Notifications table not available')
+          })
+      } catch (e) {
+        // Ignore notification errors
+      }
+
+      return NextResponse.json({ 
+        ok: true, 
+        activity_id: a.id,
+        athlete_id: owner_id,
+        validation: validation,
+        synced_at: new Date().toISOString()
+      }, { status: 200 })
     } catch (e) {
       console.error('[STRAVA_WEBHOOK] fetch/upsert error', e)
       return NextResponse.json({ error: 'exception' }, { status: 200 })

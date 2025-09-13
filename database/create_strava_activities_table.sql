@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS public.strava_activities (
   location_city TEXT,
   location_state TEXT,
   location_country TEXT,
-  start_latlng DECIMAL(10,8)[],
-  end_latlng DECIMAL(10,8)[],
+  start_latlng DECIMAL(12,8)[], -- increased precision for GPS coordinates
+  end_latlng DECIMAL(12,8)[], -- increased precision for GPS coordinates
   achievement_count INTEGER,
   kudos_count INTEGER,
   comment_count INTEGER,
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS public.strava_activities (
   gear_id TEXT,
   device_name TEXT,
   embed_token TEXT,
-  splits_metric BOOLEAN,
-  splits_default BOOLEAN,
+  splits_metric JSONB,
+  splits_default JSONB,
   has_heartrate BOOLEAN,
   has_kudoed BOOLEAN,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -63,8 +63,10 @@ CREATE INDEX IF NOT EXISTS idx_strava_activities_start_date ON public.strava_act
 CREATE INDEX IF NOT EXISTS idx_strava_activities_sport_type ON public.strava_activities(sport_type);
 
 -- Create unique constraint to prevent duplicate activities
-CREATE UNIQUE INDEX IF NOT EXISTS idx_strava_activities_unique 
-ON public.strava_activities(user_id, strava_activity_id);
+-- This constraint is required for upsert operations
+ALTER TABLE public.strava_activities 
+ADD CONSTRAINT strava_activities_unique_user_activity 
+UNIQUE (user_id, strava_activity_id);
 
 -- Enable RLS (Row Level Security)
 ALTER TABLE public.strava_activities ENABLE ROW LEVEL SECURITY;

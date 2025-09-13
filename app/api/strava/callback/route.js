@@ -10,6 +10,18 @@ export async function GET(request) {
   const code = url.searchParams.get('code')
   const error = url.searchParams.get('error')
   const state = url.searchParams.get('state')
+  
+  console.log('[STRAVA_CALLBACK] ===== CALLBACK RECEIVED =====')
+  console.log('[STRAVA_CALLBACK] Starting callback processing...')
+  console.log('[STRAVA_CALLBACK] Full URL:', request.url)
+  console.log('[STRAVA_CALLBACK] Code:', code ? 'present' : 'missing')
+  console.log('[STRAVA_CALLBACK] Error:', error || 'none')
+  console.log('[STRAVA_CALLBACK] State:', state ? 'present' : 'missing')
+  console.log('[STRAVA_CALLBACK] Headers:', {
+    'x-forwarded-host': request.headers.get('x-forwarded-host'),
+    'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+    'user-agent': request.headers.get('user-agent')
+  })
   const computedBase = (() => {
     try { return new URL(STRAVA.REDIRECT_URI).origin } catch { return null }
   })() || STRAVA.NEXT_PUBLIC_APP_BASE_URL || url.origin
@@ -30,7 +42,7 @@ export async function GET(request) {
   console.log('[STRAVA_CALLBACK] finalBase =', finalBase)
 
   if (error) {
-    const resp = NextResponse.redirect(`${finalBase}/?strava_error=${encodeURIComponent(error)}`)
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=${encodeURIComponent(error)}`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
@@ -38,7 +50,7 @@ export async function GET(request) {
   }
 
   if (!code) {
-    const resp = NextResponse.redirect(`${finalBase}/?strava_error=missing_code`)
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=missing_code`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
@@ -51,7 +63,7 @@ export async function GET(request) {
   const stateSecret = STRAVA.STATE_SECRET
 
   if (!clientId || !clientSecret || !redirectUri || !stateSecret) {
-    const resp = NextResponse.redirect(`${finalBase}/?strava_error=config_missing`)
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=config_missing`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
@@ -70,7 +82,7 @@ export async function GET(request) {
     if (!parsed?.uid || parsed.exp < Math.floor(Date.now() / 1000)) throw new Error('state_expired')
     url.searchParams.set('uid', parsed.uid)
   } catch (e) {
-    const resp = NextResponse.redirect(`${finalBase}/?strava_error=invalid_state`)
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=invalid_state`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
@@ -93,7 +105,7 @@ export async function GET(request) {
     if (!tokenResp.ok) {
       const errTxt = await tokenResp.text().catch(() => '')
       console.error('[STRAVA_CALLBACK] token exchange failed:', tokenResp.status, errTxt)
-      const resp = NextResponse.redirect(`${finalBase}/?strava_error=token_exchange_failed`)
+      const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=token_exchange_failed`)
       resp.headers.set('x-debug-computed-base', String(computedBase))
       resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
       resp.headers.set('x-debug-final-base', String(finalBase))
@@ -117,7 +129,7 @@ export async function GET(request) {
         hasRefresh: !!refreshToken,
         hasExpires: !!expiresAt
       })
-      const resp = NextResponse.redirect(`${finalBase}/?strava_error=missing_token_fields`)
+      const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=missing_token_fields`)
       resp.headers.set('x-debug-computed-base', String(computedBase))
       resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
       resp.headers.set('x-debug-final-base', String(finalBase))
@@ -126,7 +138,7 @@ export async function GET(request) {
 
     const uid = url.searchParams.get('uid')
     if (!uid) {
-      const resp = NextResponse.redirect(`${finalBase}/?strava_error=missing_uid`)
+      const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=missing_uid`)
       resp.headers.set('x-debug-computed-base', String(computedBase))
       resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
       resp.headers.set('x-debug-final-base', String(finalBase))
@@ -135,6 +147,13 @@ export async function GET(request) {
 
     // Upsert into strava_connections table
     const expiresSec = typeof expiresAt === 'number' ? expiresAt : Math.floor(new Date(expiresAt).getTime() / 1000)
+    console.log('[STRAVA_CALLBACK] Attempting to save connection data:', {
+      user_id: uid,
+      athlete_id: athleteId,
+      athlete_name: athleteName,
+      expires_at: expiresSec
+    })
+    
     const { error: upsertErr } = await supabaseAdmin
       .from('strava_connections')
       .upsert({
@@ -185,7 +204,7 @@ export async function GET(request) {
         if (insertRes.error) {
           console.error('[STRAVA_CALLBACK] insert fallback failed:', insertRes.error)
           const code = encodeURIComponent(insertRes.error.code || 'store_failed')
-          const resp = NextResponse.redirect(`${finalBase}/?strava_error=${code}`)
+          const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=${code}`)
           resp.headers.set('x-debug-computed-base', String(computedBase))
           resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
           resp.headers.set('x-debug-final-base', String(finalBase))
@@ -194,13 +213,14 @@ export async function GET(request) {
       }
     }
 
-    const resp = NextResponse.redirect(`${finalBase}/?strava_connected=1`)
+    console.log('[STRAVA_CALLBACK] Connection saved successfully, redirecting to stats page')
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_connected=1`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
     return resp
   } catch (e) {
-    const resp = NextResponse.redirect(`${finalBase}/?strava_error=${encodeURIComponent(e.message || 'unknown_error')}`)
+    const resp = NextResponse.redirect(`${finalBase}/stats?strava_error=${encodeURIComponent(e.message || 'unknown_error')}`)
     resp.headers.set('x-debug-computed-base', String(computedBase))
     resp.headers.set('x-debug-forwarded-origin', String(forwardedOrigin))
     resp.headers.set('x-debug-final-base', String(finalBase))
