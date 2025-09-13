@@ -5,6 +5,47 @@ import { decodeJwtPayload } from '../../../../lib/jwtFallback'
 
 export const runtime = 'nodejs'
 
+// Helper function to force cleanup inactive webhooks
+async function forceCleanupInactiveWebhooks() {
+  try {
+    const response = await fetch(`https://www.strava.com/api/v3/push_subscriptions?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`)
+    
+    if (response.ok) {
+      const subscriptions = await response.json()
+      const inactiveWebhooks = subscriptions.filter(sub => !sub.active)
+      
+      if (inactiveWebhooks.length > 0) {
+        console.log(`[WEBHOOK_CLEANUP] Found ${inactiveWebhooks.length} inactive webhook(s)`)
+        
+        for (const webhook of inactiveWebhooks) {
+          try {
+            const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${webhook.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                client_id: STRAVA.CLIENT_ID,
+                client_secret: STRAVA.CLIENT_SECRET
+              })
+            })
+            
+            if (deleteResponse.ok) {
+              console.log(`[WEBHOOK_CLEANUP] Cleaned up inactive webhook ${webhook.id}`)
+            } else {
+              console.log(`[WEBHOOK_CLEANUP] Could not clean up webhook ${webhook.id} (${deleteResponse.status})`)
+            }
+          } catch (error) {
+            console.warn(`[WEBHOOK_CLEANUP] Error cleaning up webhook ${webhook.id}:`, error.message)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('[WEBHOOK_CLEANUP] Error during cleanup:', error.message)
+  }
+}
+
 // GET: Check webhook subscription status
 export async function GET(request) {
   try {
@@ -120,15 +161,18 @@ export async function POST(request) {
     }
 
     try {
-      // First check if webhook already exists
+      // First cleanup any inactive webhooks
+      await forceCleanupInactiveWebhooks()
+      
+      // Then check if webhook already exists
       const checkResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`)
       
       if (checkResponse.ok) {
         const existingSubscriptions = await checkResponse.json()
-        const existingWebhook = existingSubscriptions.find(sub => sub.callback_url === webhookUrl)
+        const existingWebhook = existingSubscriptions.find(sub => sub.callback_url === webhookUrl && sub.active)
         
         if (existingWebhook) {
-          console.log(`[WEBHOOK_SETUP] Webhook already exists with ID ${existingWebhook.id}`)
+          console.log(`[WEBHOOK_SETUP] Active webhook already exists with ID ${existingWebhook.id}`)
           return NextResponse.json({
             success: true,
             subscription: existingWebhook,
@@ -138,12 +182,13 @@ export async function POST(request) {
           })
         }
 
-        // If there's a different webhook, delete it first
-        if (existingSubscriptions.length > 0) {
-          console.log(`[WEBHOOK_SETUP] Found ${existingSubscriptions.length} existing webhook(s), deleting them first`)
-          for (const sub of existingSubscriptions) {
+        // If there's a different active webhook, delete it first
+        const activeWebhooks = existingSubscriptions.filter(sub => sub.active)
+        if (activeWebhooks.length > 0) {
+          console.log(`[WEBHOOK_SETUP] Found ${activeWebhooks.length} active webhook(s), deleting them first`)
+          for (const sub of activeWebhooks) {
             try {
-              await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
+              const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
@@ -153,9 +198,23 @@ export async function POST(request) {
                   client_secret: STRAVA.CLIENT_SECRET
                 })
               })
-              console.log(`[WEBHOOK_SETUP] Deleted existing webhook ${sub.id}`)
+              
+              if (deleteResponse.ok) {
+                console.log(`[WEBHOOK_SETUP] Successfully deleted webhook ${sub.id}`)
+              } else {
+                const errorText = await deleteResponse.text()
+                console.warn(`[WEBHOOK_SETUP] Failed to delete webhook ${sub.id} (${deleteResponse.status}): ${errorText}`)
+                
+                // If webhook is inactive or already deleted, continue anyway
+                if (deleteResponse.status === 404 || errorText.includes('not found') || errorText.includes('inactive')) {
+                  console.log(`[WEBHOOK_SETUP] Webhook ${sub.id} appears to be inactive/deleted, continuing...`)
+                } else {
+                  throw new Error(`Delete failed: ${errorText}`)
+                }
+              }
             } catch (error) {
-              console.warn(`[WEBHOOK_SETUP] Failed to delete webhook ${sub.id}:`, error.message)
+              console.warn(`[WEBHOOK_SETUP] Error deleting webhook ${sub.id}:`, error.message)
+              // Continue with creation even if deletion fails
             }
           }
         }
@@ -264,6 +323,16 @@ export async function DELETE(request) {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Strava webhook deletion failed:', response.status, errorText)
+        
+        // Handle specific error cases
+        if (response.status === 404 || errorText.includes('not found') || errorText.includes('inactive')) {
+          console.log(`[WEBHOOK_SETUP] Webhook ${subscriptionId} appears to be already deleted or inactive`)
+          return NextResponse.json({
+            success: true,
+            message: 'Webhook subscription was already deleted or inactive'
+          })
+        }
+        
         return NextResponse.json({ 
           error: 'Failed to delete webhook subscription',
           details: errorText
