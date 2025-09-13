@@ -99,6 +99,25 @@ export async function POST(request) {
     }
 
     try {
+      // First check if webhook already exists
+      const checkResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`)
+      
+      if (checkResponse.ok) {
+        const existingSubscriptions = await checkResponse.json()
+        const existingWebhook = existingSubscriptions.find(sub => sub.callback_url === webhookUrl)
+        
+        if (existingWebhook) {
+          console.log(`[WEBHOOK_SETUP] Webhook already exists with ID ${existingWebhook.id}`)
+          return NextResponse.json({
+            success: true,
+            subscription: existingWebhook,
+            webhook_url: webhookUrl,
+            message: 'Webhook subscription already exists',
+            already_exists: true
+          })
+        }
+      }
+
       // Create webhook subscription
       const response = await fetch('https://www.strava.com/api/v3/push_subscriptions', {
         method: 'POST',
@@ -116,6 +135,17 @@ export async function POST(request) {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Strava webhook creation failed:', response.status, errorText)
+        
+        // Handle "already exists" error specifically
+        if (response.status === 400 && errorText.includes('already exists')) {
+          return NextResponse.json({
+            success: true,
+            webhook_url: webhookUrl,
+            message: 'Webhook subscription already exists',
+            already_exists: true
+          })
+        }
+        
         return NextResponse.json({ 
           error: 'Failed to create webhook subscription',
           details: errorText
