@@ -1,1 +1,11 @@
-{}
+{
+  "/page": "app/page.js",
+  "/api/strava/athlete-stats/route": "app/api/strava/athlete-stats/route.js",
+  "/api/strava/status/route": "app/api/strava/status/route.js",
+  "/stats/page": "app/stats/page.js",
+  "/api/strava/start/route": "app/api/strava/start/route.js",
+  "/auth/callback/route": "app/auth/callback/route.js",
+  "/api/strava/sync-progress/route": "app/api/strava/sync-progress/route.js",
+  "/api/strava/callback/route": "app/api/strava/callback/route.js",
+  "/api/strava/sync/route": "app/api/strava/sync/route.js"
+}
