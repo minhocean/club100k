@@ -144,12 +144,42 @@ export default function WebhookSetup({ user }) {
     }
   }
 
+  const forceCleanupAndRecreate = async () => {
+    setLoading(true)
+    setError('')
+    setMessage('')
+    
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session?.data?.session?.access_token
+      
+      if (!token) return
+
+      const res = await fetch(`/api/strava/webhook-setup?sb=${encodeURIComponent(token)}`, {
+        method: 'PUT'
+      })
+      const data = await res.json()
+      
+      if (res.ok) {
+        setMessage('Đã force cleanup và tạo webhook mới thành công!')
+        await checkWebhookStatus() // Refresh status
+      } else {
+        setError(data.error || 'Failed to force cleanup webhook')
+      }
+    } catch (error) {
+      console.error('Error force cleaning up webhook:', error)
+      setError('Failed to force cleanup webhook')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!user) return null
 
   return (
     <div style={{ marginTop: '16px', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
-        🔗 Thiết lập Webhook Real-time 3
+        🔗 Thiết lập Webhook Real-time 4
       </h4>
       
       <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
@@ -320,6 +350,23 @@ export default function WebhookSetup({ user }) {
             🧹 Dọn dẹp tất cả
           </button>
         )}
+
+        <button
+          onClick={forceCleanupAndRecreate}
+          disabled={loading}
+          style={{
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '6px 12px',
+            fontSize: '12px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.6 : 1
+          }}
+        >
+          🔥 Force Cleanup & Tạo mới
+        </button>
       </div>
 
       <div style={{ 

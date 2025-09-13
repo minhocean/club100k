@@ -279,6 +279,123 @@ export async function POST(request) {
   }
 }
 
+// PUT: Force cleanup all webhooks and create new one
+export async function PUT(request) {
+  try {
+    const url = new URL(request.url)
+    const accessToken = url.searchParams.get('sb')
+    
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user ID from token
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken)
+    let userId = userData?.user?.id
+    
+    if (!userId) {
+      const payload = decodeJwtPayload(accessToken)
+      userId = payload?.sub || payload?.user_id || null
+    }
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+    }
+
+    const webhookUrl = `${STRAVA.NEXT_PUBLIC_APP_BASE_URL}/api/strava/webhook`
+    const verifyToken = STRAVA.WEBHOOK_VERIFY_TOKEN
+
+    if (!verifyToken) {
+      return NextResponse.json({ 
+        error: 'Webhook verify token not configured' 
+      }, { status: 400 })
+    }
+
+    try {
+      // Get all existing subscriptions
+      const response = await fetch(`https://www.strava.com/api/v3/push_subscriptions?client_id=${STRAVA.CLIENT_ID}&client_secret=${STRAVA.CLIENT_SECRET}`)
+      
+      if (response.ok) {
+        const subscriptions = await response.json()
+        console.log(`[FORCE_CLEANUP] Found ${subscriptions.length} existing subscriptions`)
+        
+        // Delete ALL existing webhooks
+        for (const sub of subscriptions) {
+          try {
+            const deleteResponse = await fetch(`https://www.strava.com/api/v3/push_subscriptions/${sub.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                client_id: STRAVA.CLIENT_ID,
+                client_secret: STRAVA.CLIENT_SECRET
+              })
+            })
+            
+            if (deleteResponse.ok) {
+              console.log(`[FORCE_CLEANUP] Deleted webhook ${sub.id}`)
+            } else {
+              const errorText = await deleteResponse.text()
+              console.log(`[FORCE_CLEANUP] Could not delete webhook ${sub.id}: ${errorText}`)
+            }
+          } catch (error) {
+            console.warn(`[FORCE_CLEANUP] Error deleting webhook ${sub.id}:`, error.message)
+          }
+        }
+        
+        // Wait a moment for cleanup to complete
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      // Create new webhook subscription
+      const createResponse = await fetch('https://www.strava.com/api/v3/push_subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: STRAVA.CLIENT_ID,
+          client_secret: STRAVA.CLIENT_SECRET,
+          callback_url: webhookUrl,
+          verify_token: verifyToken
+        })
+      })
+
+      if (!createResponse.ok) {
+        const errorText = await createResponse.text()
+        console.error('Strava webhook creation failed:', createResponse.status, errorText)
+        return NextResponse.json({ 
+          error: 'Failed to create webhook subscription',
+          details: errorText
+        }, { status: 400 })
+      }
+
+      const subscription = await createResponse.json()
+      
+      console.log(`[FORCE_CLEANUP] Created new webhook subscription ${subscription.id} for ${webhookUrl}`)
+      
+      return NextResponse.json({
+        success: true,
+        subscription: subscription,
+        webhook_url: webhookUrl,
+        message: 'Webhook subscription force cleaned and recreated successfully'
+      })
+
+    } catch (error) {
+      console.error('Error during force cleanup:', error)
+      return NextResponse.json({ 
+        error: 'Failed to force cleanup webhook',
+        details: error.message
+      }, { status: 500 })
+    }
+
+  } catch (error) {
+    console.error('Force cleanup API error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
 // DELETE: Remove webhook subscription
 export async function DELETE(request) {
   try {
