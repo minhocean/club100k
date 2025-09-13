@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'GeminiSport - Google Login',
+  title: 'Clb100kSport - Google Login',
   description: 'Simple Next.js app with Google authentication using Supabase',
 }
 
