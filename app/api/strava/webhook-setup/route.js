@@ -43,13 +43,34 @@ export async function GET(request) {
       }
 
       const subscriptions = await response.json()
-      const existingWebhook = subscriptions.find(sub => sub.callback_url === webhookUrl)
+      
+      // Debug: Log all existing webhook URLs
+      console.log(`[WEBHOOK_STATUS] Checking for webhook URL: ${webhookUrl}`)
+      console.log(`[WEBHOOK_STATUS] Found ${subscriptions.length} existing subscriptions:`)
+      subscriptions.forEach((sub, index) => {
+        console.log(`[WEBHOOK_STATUS] ${index + 1}. ID: ${sub.id}, URL: ${sub.callback_url}`)
+      })
+      
+      // Find webhook by exact URL match first
+      let existingWebhook = subscriptions.find(sub => sub.callback_url === webhookUrl)
+      
+      // If no exact match, try to find by domain/path (more flexible matching)
+      if (!existingWebhook) {
+        const webhookPath = '/api/strava/webhook'
+        existingWebhook = subscriptions.find(sub => 
+          sub.callback_url && sub.callback_url.includes(webhookPath)
+        )
+        if (existingWebhook) {
+          console.log(`[WEBHOOK_STATUS] Found webhook by path matching: ${existingWebhook.callback_url}`)
+        }
+      }
       
       return NextResponse.json({
         webhook_url: webhookUrl,
         is_configured: !!existingWebhook,
         subscription: existingWebhook || null,
-        total_subscriptions: subscriptions.length
+        total_subscriptions: subscriptions.length,
+        all_subscriptions: subscriptions // Include all for debugging
       })
 
     } catch (error) {

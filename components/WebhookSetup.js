@@ -106,6 +106,44 @@ export default function WebhookSetup({ user }) {
     }
   }
 
+  const cleanupAllWebhooks = async () => {
+    if (!webhookStatus?.all_subscriptions || webhookStatus.all_subscriptions.length === 0) return
+    
+    setLoading(true)
+    setError('')
+    setMessage('')
+    
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session?.data?.session?.access_token
+      
+      if (!token) return
+
+      // Delete all existing webhooks
+      const deletePromises = webhookStatus.all_subscriptions.map(sub => 
+        fetch(`/api/strava/webhook-setup?sb=${encodeURIComponent(token)}&id=${sub.id}`, {
+          method: 'DELETE'
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedDeletes = results.filter(res => !res.ok)
+      
+      if (failedDeletes.length === 0) {
+        setMessage(`Đã xóa thành công ${webhookStatus.all_subscriptions.length} webhook(s)!`)
+      } else {
+        setMessage(`Đã xóa ${results.length - failedDeletes.length}/${results.length} webhook(s)`)
+      }
+      
+      await checkWebhookStatus() // Refresh status
+    } catch (error) {
+      console.error('Error cleaning up webhooks:', error)
+      setError('Failed to cleanup webhooks')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!user) return null
 
   return (
@@ -183,9 +221,30 @@ export default function WebhookSetup({ user }) {
             </div>
           )}
 
-          <div style={{ fontSize: '12px' }}>
+          <div style={{ fontSize: '12px', marginBottom: '4px' }}>
             <strong>Tổng subscriptions:</strong> {webhookStatus.total_subscriptions}
           </div>
+
+          {/* Debug info for existing subscriptions */}
+          {webhookStatus.all_subscriptions && webhookStatus.all_subscriptions.length > 0 && (
+            <div style={{ 
+              fontSize: '10px', 
+              marginTop: '8px', 
+              padding: '8px', 
+              backgroundColor: '#f8f9fa', 
+              border: '1px solid #dee2e6', 
+              borderRadius: '4px' 
+            }}>
+              <strong>Debug - Existing webhooks:</strong>
+              {webhookStatus.all_subscriptions.map((sub, index) => (
+                <div key={index} style={{ marginTop: '4px' }}>
+                  <div><strong>ID:</strong> {sub.id}</div>
+                  <div><strong>URL:</strong> {sub.callback_url}</div>
+                  <div><strong>Active:</strong> {sub.active ? 'Yes' : 'No'}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -240,6 +299,25 @@ export default function WebhookSetup({ user }) {
             }}
           >
             ⚙️ Thiết lập webhook
+          </button>
+        )}
+
+        {webhookStatus?.all_subscriptions && webhookStatus.all_subscriptions.length > 0 && (
+          <button
+            onClick={cleanupAllWebhooks}
+            disabled={loading}
+            style={{
+              backgroundColor: '#ffc107',
+              color: '#212529',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            🧹 Dọn dẹp tất cả
           </button>
         )}
       </div>
