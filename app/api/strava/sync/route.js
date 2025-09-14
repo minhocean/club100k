@@ -294,8 +294,9 @@ export async function GET(request) {
     
   } catch (error) {
     console.error('Sync API error:', error)
+    // Don't expose internal error details to client
     return NextResponse.json({ 
-      error: `Sync failed: ${error.message}` 
+      error: 'Sync failed. Please try again later.' 
     }, { status: 500 })
   }
 }

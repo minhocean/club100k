@@ -9,9 +9,14 @@ export async function GET(request) {
   try {
     const url = new URL(request.url)
     const accessToken = url.searchParams.get('sb')
-    const limit = parseInt(url.searchParams.get('limit') || '20')
-    const offset = parseInt(url.searchParams.get('offset') || '0')
+    // Validate and sanitize input parameters
+    const limitParam = url.searchParams.get('limit') || '20'
+    const offsetParam = url.searchParams.get('offset') || '0'
     const unreadOnly = url.searchParams.get('unread_only') === 'true'
+    
+    // Validate numeric inputs
+    const limit = Math.min(Math.max(parseInt(limitParam) || 20, 1), 100) // Between 1-100
+    const offset = Math.max(parseInt(offsetParam) || 0, 0) // Non-negative
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -69,7 +74,7 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Notifications API error:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -78,7 +83,17 @@ export async function POST(request) {
   try {
     const url = new URL(request.url)
     const accessToken = url.searchParams.get('sb')
-    const notificationIds = url.searchParams.get('ids')?.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+    // Validate notification IDs
+    const idsParam = url.searchParams.get('ids')
+    if (!idsParam) {
+      return NextResponse.json({ error: 'No notification IDs provided' }, { status: 400 })
+    }
+    
+    const notificationIds = idsParam
+      .split(',')
+      .map(id => parseInt(id.trim()))
+      .filter(id => !isNaN(id) && id > 0) // Only positive integers
+      .slice(0, 50) // Limit to 50 IDs max
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -97,8 +112,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
     }
 
-    if (!notificationIds || notificationIds.length === 0) {
-      return NextResponse.json({ error: 'No notification IDs provided' }, { status: 400 })
+    if (notificationIds.length === 0) {
+      return NextResponse.json({ error: 'No valid notification IDs provided' }, { status: 400 })
     }
 
     // Mark notifications as read
@@ -117,6 +132,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Mark notifications API error:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

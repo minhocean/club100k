@@ -15,6 +15,7 @@ export default function StatsPage() {
   const [currentActivity, setCurrentActivity] = useState(null)
   const [processedActivities, setProcessedActivities] = useState([])
   const [connections, setConnections] = useState([])
+  const [error, setError] = useState(null)
 
   const checkStravaStatus = async () => {
     try {
@@ -74,6 +75,12 @@ export default function StatsPage() {
     const stravaConnected = urlParams.get('strava_connected')
     const stravaError = urlParams.get('strava_error')
     
+    // Validate URL parameters - only allow expected values
+    const allowedErrors = [
+      'missing_code', 'invalid_state', 'token_exchange_failed', 
+      'missing_token_fields', 'missing_uid', 'config_missing', 'store_failed'
+    ]
+    
     console.log('Stats page - URL params check:', {
       stravaConnected,
       stravaError,
@@ -89,11 +96,17 @@ export default function StatsPage() {
         console.log('Stats page - Refreshing status after callback')
         checkStravaStatus()
       }, 1000)
-    } else if (stravaError) {
+    } else if (stravaError && allowedErrors.includes(stravaError)) {
       console.error('Stats page - Strava connection error:', stravaError)
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname)
-      alert(`Lỗi kết nối Strava: ${stravaError}`)
+      // Safe error display - error is already validated
+      setError(`Lỗi kết nối Strava: ${stravaError}`)
+    } else if (stravaError) {
+      // Unknown error - log but don't display to user
+      console.error('Stats page - Unknown Strava error:', stravaError)
+      window.history.replaceState({}, document.title, window.location.pathname)
+      setError('Đã xảy ra lỗi không xác định. Vui lòng thử lại.')
     }
   }, [])
 
@@ -325,6 +338,36 @@ export default function StatsPage() {
       </header>
 
       <main style={{ padding: '16px' }}>
+        {/* Error Display */}
+        {error && (
+          <div style={{
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            padding: '16px',
+            margin: '16px',
+            color: '#dc2626'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>⚠️</span>
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                style={{
+                  marginLeft: 'auto',
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Athlete (user) info section similar to Profile */}
         <section style={{
           backgroundColor: 'white',
@@ -699,7 +742,7 @@ export default function StatsPage() {
         padding: '1rem',
         marginTop: '2rem'
       }}>
-        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.01!</p>
+        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.02!</p>
       </footer>
     </div>
   )
