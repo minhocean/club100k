@@ -78,6 +78,40 @@ export async function GET(request) {
 
     const ready = await refreshTokenIfNeeded(conn)
 
+    // Fetch and update athlete profile information including avatars
+    try {
+      console.log('Fetching athlete profile information...')
+      const profileResp = await fetch('https://www.strava.com/api/v3/athlete', {
+        headers: { Authorization: `Bearer ${ready.access_token}` }
+      })
+      
+      if (profileResp.ok) {
+        const profileData = await profileResp.json()
+        console.log('Athlete profile data:', profileData.firstname, profileData.lastname, profileData.profile_medium)
+        
+        // Update athlete profile in database
+        const { error: updateError } = await supabaseAdmin
+          .from('strava_connections')
+          .update({
+            athlete_name: `${profileData.firstname || ''} ${profileData.lastname || ''}`.trim(),
+            profile_medium: profileData.profile_medium || null,
+            profile_large: profileData.profile || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('athlete_id', ready.athlete_id)
+        
+        if (updateError) {
+          console.error('Error updating athlete profile:', updateError)
+        } else {
+          console.log('Successfully updated athlete profile and avatar')
+        }
+      } else {
+        console.error('Failed to fetch athlete profile:', profileResp.status)
+      }
+    } catch (profileError) {
+      console.error('Error fetching athlete profile:', profileError)
+    }
+
     const after = url.searchParams.get('after')
     const before = url.searchParams.get('before')
     
