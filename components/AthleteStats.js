@@ -133,16 +133,10 @@ export default function AthleteStats() {
         
         {/* Legend */}
         <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <h3 className="text-base font-semibold text-black mb-4">Thống kê thành tích</h3>
+          <h3 className="text-base font-semibold text-black mb-4">Thành viên câu lạc bộ</h3>
           <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🏆</span>
-              <span className="text-black">Thành tích xuất sắc (≥100km/tháng )</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-4 h-4 bg-danger-500 rounded-full"></span>
-              <span className="text-black">Tháng cần cải thiện (&lt;100km)</span>
-            </div>
+           
+           
           </div>
         </div>
         
