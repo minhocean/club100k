@@ -14,6 +14,7 @@ export default function StatsPage() {
   const [showSyncResults, setShowSyncResults] = useState(false)
   const [currentActivity, setCurrentActivity] = useState(null)
   const [processedActivities, setProcessedActivities] = useState([])
+  const [connections, setConnections] = useState([])
 
   const checkStravaStatus = async () => {
     try {
@@ -35,12 +36,32 @@ export default function StatsPage() {
     }
   }
 
+  const loadConnections = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+
+      const res = await fetch(`/api/strava/connections?sb=${encodeURIComponent(token)}`)
+      const json = await res.json()
+      
+      if (json.error) {
+        console.error('Error loading connections:', json.error)
+      } else {
+        setConnections(json.connections || [])
+      }
+    } catch (e) {
+      console.error('Error loading connections:', e)
+    }
+  }
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUser(session.user)
         await checkStravaStatus()
+        await loadConnections()
       }
       setLoading(false)
     }
@@ -131,7 +152,7 @@ export default function StatsPage() {
       let totalProcessed = 0
       
       while (hasMore) {
-        const response = await fetch(`/api/strava/sync-progress?sb=${encodeURIComponent(token || '')}&page=${page}&after=${after}&before=${before}`)
+        const response = await fetch(`/api/strava/sync-progress?sb=${encodeURIComponent(token || '')}&page=${page}&after=${after}&before=${before}&athlete_id=${strava.athleteId}`)
         const result = await response.json()
         
         if (result.error) {
@@ -178,7 +199,7 @@ export default function StatsPage() {
       setSyncProgress({ current: 3, total: 5, message: 'Đang lưu dữ liệu vào cơ sở dữ liệu...' })
       setCurrentActivity(null)
       
-      const syncResponse = await fetch(`/api/strava/sync?sb=${encodeURIComponent(token || '')}&after=${after}&before=${before}`)
+      const syncResponse = await fetch(`/api/strava/sync?sb=${encodeURIComponent(token || '')}&after=${after}&before=${before}&athlete_id=${strava.athleteId}`)
       const syncResult = await syncResponse.json()
       
       if (syncResult.error) {
@@ -371,21 +392,23 @@ export default function StatsPage() {
                 {strava.connected && !strava.expired ? 'Kết nối lại' : 'Kết nối Strava'}
               </button>
               {strava.connected && !strava.expired && (
-                <button
-                  onClick={handleSyncData}
-                  disabled={isSyncing}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: isSyncing ? '#9ca3af' : '#16a34a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: isSyncing ? 'not-allowed' : 'pointer',
-                    opacity: isSyncing ? 0.7 : 1
-                  }}
-                >
-                  {isSyncing ? 'Đang đồng bộ...' : 'Lấy dữ liệu Strava'}
-                </button>
+                <>
+                  <button
+                    onClick={handleSyncData}
+                    disabled={isSyncing}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: isSyncing ? '#9ca3af' : '#16a34a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: isSyncing ? 'not-allowed' : 'pointer',
+                      opacity: isSyncing ? 0.7 : 1
+                    }}
+                  >
+                    {isSyncing ? 'Đang đồng bộ...' : 'Lấy dữ liệu Strava'}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -664,6 +687,7 @@ export default function StatsPage() {
             </div>
           </div>
         )}
+
 
         <AthleteStats />
       </main>

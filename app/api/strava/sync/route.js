@@ -164,8 +164,8 @@ export async function GET(request) {
           const pace = distanceKm > 0 && timeMinutes > 0 ? timeMinutes / distanceKm : 0
 
           // Hoạt động hợp lệ: (Pace >= 3 và Pace <= 13) và (quãng đường >= 3km và quãng đường <= 15km)
-          const isValidPace = pace >= 3 && pace <= 13
-          const isValidDistance = distanceKm >= 3 && distanceKm <= 15
+          const isValidPace = pace >= 3 && pace <= 14
+          const isValidDistance = distanceKm >= 3 && distanceKm <= 16
           const isValid = isValidPace && isValidDistance
 
           console.log(`Activity ${activity.id}: Pace=${pace.toFixed(2)} min/km, Distance=${distanceKm.toFixed(2)}km, Valid=${isValid}`)

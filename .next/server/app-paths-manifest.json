@@ -1,11 +1,11 @@
 {
   "/page": "app/page.js",
-  "/api/notifications/route": "app/api/notifications/route.js",
-  "/auth/callback/route": "app/auth/callback/route.js",
-  "/api/strava/webhook-setup/route": "app/api/strava/webhook-setup/route.js",
-  "/api/strava/status/route": "app/api/strava/status/route.js",
   "/stats/page": "app/stats/page.js",
-  "/api/strava/sync-progress/route": "app/api/strava/sync-progress/route.js",
-  "/api/strava/sync/route": "app/api/strava/sync/route.js",
+  "/api/strava/start/route": "app/api/strava/start/route.js",
+  "/api/strava/callback/route": "app/api/strava/callback/route.js",
+  "/api/notifications/route": "app/api/notifications/route.js",
+  "/api/strava/status/route": "app/api/strava/status/route.js",
+  "/api/strava/connections/route": "app/api/strava/connections/route.js",
+  "/api/strava/webhook-setup/route": "app/api/strava/webhook-setup/route.js",
   "/api/strava/athlete-stats/route": "app/api/strava/athlete-stats/route.js"
 }

@@ -49,6 +49,7 @@ export async function GET(request) {
     const page = parseInt(url.searchParams.get('page') || '1')
     const after = url.searchParams.get('after')
     const before = url.searchParams.get('before')
+    const requestedAthleteId = url.searchParams.get('athlete_id')
     
     if (!accessToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (!after || !before) return NextResponse.json({ error: 'Missing date range parameters' }, { status: 400 })
@@ -60,11 +61,17 @@ export async function GET(request) {
     }
     const uid = userData.user.id
 
-    const { data: conn, error: connError } = await supabaseAdmin
+    let connQuery = supabaseAdmin
       .from('strava_connections')
       .select('user_id, athlete_id, access_token, refresh_token, expires_at')
-      .eq('user_id', uid)
-      .maybeSingle()
+
+    if (requestedAthleteId) {
+      connQuery = connQuery.eq('athlete_id', requestedAthleteId)
+    } else {
+      connQuery = connQuery.eq('user_id', uid)
+    }
+
+    const { data: conn, error: connError } = await connQuery.maybeSingle()
 
     if (connError) {
       console.error('Connection fetch error:', connError)
@@ -99,8 +106,8 @@ export async function GET(request) {
       const timeMinutes = activity.moving_time ? activity.moving_time / 60 : 0
       const pace = distanceKm > 0 && timeMinutes > 0 ? timeMinutes / distanceKm : 0
       
-      const isValidPace = pace >= 3 && pace <= 13
-      const isValidDistance = distanceKm >= 3 && distanceKm <= 15
+      const isValidPace = pace >= 3 && pace <= 14
+      const isValidDistance = distanceKm >= 3 && distanceKm <= 16
       const isValid = isValidPace && isValidDistance
       
       return {
