@@ -121,6 +121,10 @@ export async function GET(request) {
     const athleteName = tokenJson?.athlete?.firstname && tokenJson?.athlete?.lastname 
       ? `${tokenJson.athlete.firstname} ${tokenJson.athlete.lastname}`.trim()
       : tokenJson?.athlete?.firstname || `Vận động viên ${athleteId}`
+    
+    // Extract profile picture URLs from athlete data
+    const profileMedium = tokenJson?.athlete?.profile_medium || null
+    const profileLarge = tokenJson?.athlete?.profile_large || null
 
     if (!athleteId || !accessToken || !refreshToken || !expiresAt) {
       console.error('[STRAVA_CALLBACK] missing token fields', {
@@ -151,6 +155,8 @@ export async function GET(request) {
       user_id: uid,
       athlete_id: athleteId,
       athlete_name: athleteName,
+      profile_medium: profileMedium,
+      profile_large: profileLarge,
       expires_at: expiresSec
     })
     
@@ -160,6 +166,8 @@ export async function GET(request) {
         user_id: uid,
         athlete_id: athleteId,
         athlete_name: athleteName,
+        profile_medium: profileMedium,
+        profile_large: profileLarge,
         access_token: accessToken,
         refresh_token: refreshToken,
         expires_at: expiresSec,
@@ -173,6 +181,8 @@ export async function GET(request) {
         .update({
           athlete_id: athleteId,
           athlete_name: athleteName,
+          profile_medium: profileMedium,
+          profile_large: profileLarge,
           access_token: accessToken,
           refresh_token: refreshToken,
           expires_at: expiresSec,
@@ -193,6 +203,8 @@ export async function GET(request) {
             user_id: uid,
             athlete_id: athleteId,
             athlete_name: athleteName,
+            profile_medium: profileMedium,
+            profile_large: profileLarge,
             access_token: accessToken,
             refresh_token: refreshToken,
             expires_at: expiresSec,

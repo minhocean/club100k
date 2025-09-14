@@ -51,23 +51,31 @@ export async function GET(request) {
     const uniqueAthleteIds = [...new Set(activities.map(a => a.athlete_id))]
     const athleteUserMap = {}
     
-    // Get athlete names from strava_connections table
+    // Get athlete names and profile info from strava_connections table
     const { data: connections } = await supabase
       .from('strava_connections')
-      .select('athlete_id, athlete_name')
+      .select('athlete_id, athlete_name, profile_medium, profile_large')
       .in('athlete_id', uniqueAthleteIds)
     
     // Create mapping from connections data
     if (connections) {
       connections.forEach(conn => {
-        athleteUserMap[conn.athlete_id] = conn.athlete_name || `Vận động viên ${conn.athlete_id}`
+        athleteUserMap[conn.athlete_id] = {
+          name: conn.athlete_name || `Vận động viên ${conn.athlete_id}`,
+          profile_medium: conn.profile_medium,
+          profile_large: conn.profile_large
+        }
       })
     }
     
     // Fill in any missing athlete names
     uniqueAthleteIds.forEach(athleteId => {
       if (!athleteUserMap[athleteId]) {
-        athleteUserMap[athleteId] = `Vận động viên ${athleteId}`
+        athleteUserMap[athleteId] = {
+          name: `Vận động viên ${athleteId}`,
+          profile_medium: null,
+          profile_large: null
+        }
       }
     })
 
@@ -81,9 +89,12 @@ export async function GET(request) {
       const distance = activity.distance ? activity.distance / 1000 : 0 // Convert to km
       
       if (!athleteStats[athleteId]) {
+        const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
         athleteStats[athleteId] = {
           athlete_id: athleteId,
-          athlete_name: athleteUserMap[athleteId] || `Athlete ${athleteId}`,
+          athlete_name: athleteInfo.name,
+          profile_medium: athleteInfo.profile_medium,
+          profile_large: athleteInfo.profile_large,
           monthly_stats: {},
           total_distance: 0,
           total_activities: 0

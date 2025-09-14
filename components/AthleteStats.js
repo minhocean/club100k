@@ -158,6 +158,9 @@ export default function AthleteStats() {
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-primary-600 to-primary-700">
                   <tr>
+                    <th className="px-4 py-4 text-center text-white font-semibold min-w-[80px]">
+                      STT
+                    </th>
                     <th className="px-4 py-4 text-left text-white font-semibold min-w-[20px]">
                       Mã vận động viên
                     </th>
@@ -185,7 +188,28 @@ export default function AthleteStats() {
                       }`}
                       onClick={() => loadAthleteActivities(athlete.athlete_id)}
                     >
-                      <td className="px-2 py-4 border-r border-gray-200 text-black">
+                      <td className="px-2 py-4 text-center border-r border-gray-200">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-gray-500 font-semibold text-sm">{idx + 1}</span>
+                          {athlete.profile_medium ? (
+                            <img 
+                              src={athlete.profile_medium} 
+                              alt={`Avatar của ${athlete.athlete_name}`}
+                              className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextSibling.style.display = 'block'
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-xs ${athlete.profile_medium ? 'hidden' : 'block'}`}
+                          >
+                            {athlete.athlete_name ? athlete.athlete_name.charAt(0).toUpperCase() : '?'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-4 border-r border-gray-200 text-black font-mono text-sm">
                         {athlete.athlete_id}
                       </td>
                       <td className="px-2 py-4 border-r border-gray-200 text-black">
