@@ -132,13 +132,7 @@ export default function AthleteStats() {
         {/* Header removed per request */}
         
         {/* Legend */}
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <h3 className="text-base font-semibold text-black mb-4">Thành viên câu lạc bộ</h3>
-          <div className="flex flex-wrap items-center gap-6">
-           
-           
-          </div>
-        </div>
+       
         
         {athletes.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
@@ -305,6 +299,12 @@ export default function AthleteStats() {
                           <th className="px-3 py-3 text-left text-black font-semibold border-b border-gray-300 whitespace-nowrap">
                             <span className="inline-block w-[6ch]">Ngày</span>
                           </th>
+                          <th className="px-3 py-3 text-left text-black font-semibold border-b border-gray-300 whitespace-nowrap">
+                            <span className="inline-block w-[10ch]">Bắt đầu</span>
+                          </th>
+                          <th className="px-3 py-3 text-left text-black font-semibold border-b border-gray-300 whitespace-nowrap">
+                            <span className="inline-block w-[10ch]">Kết thúc</span>
+                          </th>
                           <th className="px-3 py-3 text-left text-black font-semibold border-b border-gray-300 w-[5ch] max-w-[5ch] whitespace-nowrap">
                             <span className="block truncate">Loại</span>
                           </th>
@@ -345,6 +345,12 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${isInvalid ? 'text-red-600' : 'text-black'}`}>
                               <span className="inline-block w-full">{activity.activity_date}</span>
+                            </td>
+                            <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${isInvalid ? 'text-red-600' : 'text-black'}`}>
+                              <span className="inline-block w-full">{activity.start_time || '-'}</span>
+                            </td>
+                            <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${isInvalid ? 'text-red-600' : 'text-black'}`}>
+                              <span className="inline-block w-full">{activity.end_time || '-'}</span>
                             </td>
                             <td className={`px-3 py-3 whitespace-nowrap w-[5ch] max-w-[5ch] text-center ${isInvalid ? 'text-red-600' : 'text-black'}`}>
                               <span title={activity.activity_type}>{mapActivityTypeToIcon(activity.activity_type)}</span>

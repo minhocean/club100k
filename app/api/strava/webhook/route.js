@@ -146,6 +146,26 @@ export async function POST(request) {
       // Validate activity data
       const validation = validateActivity(a)
 
+      // Compute robust datetime fields
+      const utcOffsetSeconds = typeof a.utc_offset === 'number' ? a.utc_offset : 0
+      const startUtc = a.start_date ? new Date(a.start_date) : null
+      const startLocalNaiveDate = startUtc ? new Date(startUtc.getTime() + utcOffsetSeconds * 1000) : null
+      const durationSeconds = a.elapsed_time || a.moving_time || 0
+      const endUtc = startUtc ? new Date(startUtc.getTime() + durationSeconds * 1000) : null
+      const endLocalNaiveDate = startLocalNaiveDate ? new Date(startLocalNaiveDate.getTime() + durationSeconds * 1000) : null
+
+      const formatTimestampWithoutTZ = (date) => {
+        if (!date) return null
+        const pad = (n) => String(n).padStart(2, '0')
+        const yyyy = date.getFullYear()
+        const mm = pad(date.getMonth() + 1)
+        const dd = pad(date.getDate())
+        const hh = pad(date.getHours())
+        const mi = pad(date.getMinutes())
+        const ss = pad(date.getSeconds())
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
+      }
+
       // Prepare comprehensive activity data (same structure as sync route)
       const activityData = {
         user_id: conn.user_id,
@@ -167,8 +187,10 @@ export async function POST(request) {
         average_heartrate: safeNumeric(a.average_heartrate, 999999),
         max_heartrate: safeNumeric(a.max_heartrate, 999999),
         calories: safeNumeric(a.calories, 999999999999),
-        start_date: a.start_date,
-        start_date_local: a.start_date_local,
+        start_date: startUtc ? startUtc.toISOString() : null,
+        start_date_local: formatTimestampWithoutTZ(startLocalNaiveDate),
+        end_date: endUtc ? endUtc.toISOString() : null,
+        end_date_local: formatTimestampWithoutTZ(endLocalNaiveDate),
         timezone: a.timezone,
         utc_offset: a.utc_offset,
         location_city: a.location_city,

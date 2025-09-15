@@ -217,6 +217,26 @@ export async function GET(request) {
         // Validate activity data
         const validation = validateActivity(activity)
 
+        // Compute robust datetime fields
+        const utcOffsetSeconds = typeof activity.utc_offset === 'number' ? activity.utc_offset : 0
+        const startUtc = activity.start_date ? new Date(activity.start_date) : null
+        const startLocalNaiveDate = startUtc ? new Date(startUtc.getTime() + utcOffsetSeconds * 1000) : null
+        const durationSeconds = activity.elapsed_time || activity.moving_time || 0
+        const endUtc = startUtc ? new Date(startUtc.getTime() + durationSeconds * 1000) : null
+        const endLocalNaiveDate = startLocalNaiveDate ? new Date(startLocalNaiveDate.getTime() + durationSeconds * 1000) : null
+
+        const formatTimestampWithoutTZ = (date) => {
+          if (!date) return null
+          const pad = (n) => String(n).padStart(2, '0')
+          const yyyy = date.getFullYear()
+          const mm = pad(date.getMonth() + 1)
+          const dd = pad(date.getDate())
+          const hh = pad(date.getHours())
+          const mi = pad(date.getMinutes())
+          const ss = pad(date.getSeconds())
+          return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
+        }
+
         const activityData = {
           // Store under the owning user's id of the connection (so multi-athlete sync associates correctly)
           user_id: conn.user_id,
@@ -238,8 +258,10 @@ export async function GET(request) {
           average_heartrate: safeNumeric(activity.average_heartrate, 999999), // Max 8 digits
           max_heartrate: safeNumeric(activity.max_heartrate, 999999), // Max 8 digits
           calories: safeNumeric(activity.calories, 999999999999), // Max 12 digits
-          start_date: activity.start_date,
-          start_date_local: activity.start_date_local,
+          start_date: startUtc ? startUtc.toISOString() : null,
+          start_date_local: formatTimestampWithoutTZ(startLocalNaiveDate),
+          end_date: endUtc ? endUtc.toISOString() : null,
+          end_date_local: formatTimestampWithoutTZ(endLocalNaiveDate),
           timezone: activity.timezone,
           utc_offset: activity.utc_offset,
           location_city: activity.location_city,

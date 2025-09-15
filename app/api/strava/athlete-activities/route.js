@@ -41,6 +41,8 @@ export async function GET(request) {
         elapsed_time,
         start_date,
         start_date_local,
+        end_date,
+        end_date_local,
         sport_type,
         activity_type,
         location_city,
@@ -65,8 +67,15 @@ export async function GET(request) {
       distance_km: activity.distance ? (activity.distance / 1000).toFixed(2) : 0,
       average_speed_kmh: activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) : 0,
       duration_minutes: Math.floor((activity.moving_time || activity.elapsed_time || 0) / 60),
-      activity_date: activity.start_date ? new Date(activity.start_date).toLocaleDateString('vi-VN') : 'N/A',
-      start_time: activity.start_date ? new Date(activity.start_date).toLocaleTimeString('vi-VN') : 'N/A',
+      activity_date: activity.start_date_local 
+        ? new Date(activity.start_date_local).toLocaleDateString('vi-VN') 
+        : (activity.start_date ? new Date(activity.start_date).toLocaleDateString('vi-VN') : 'N/A'),
+      start_time: activity.start_date_local 
+        ? new Date(activity.start_date_local).toLocaleTimeString('vi-VN') 
+        : (activity.start_date ? new Date(activity.start_date).toLocaleTimeString('vi-VN') : 'N/A'),
+      end_time: activity.end_date_local 
+        ? new Date(activity.end_date_local).toLocaleTimeString('vi-VN') 
+        : (activity.end_date ? new Date(activity.end_date).toLocaleTimeString('vi-VN') : 'N/A'),
       activity_type: activity.sport_type || activity.activity_type || 'N/A',
       location: [activity.location_city, activity.location_state, activity.location_country]
         .filter(Boolean)
