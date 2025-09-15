@@ -149,9 +149,6 @@ export default function AthleteStats() {
                     <th className="px-4 py-4 text-center text-white font-semibold min-w-[80px]">
                       STT
                     </th>
-                    <th className="px-4 py-4 text-left text-white font-semibold min-w-[20px]">
-                      Mã vận động viên
-                    </th>
                     <th className="px-4 py-4 text-left text-white font-semibold min-w-[50px]">
                       Tên vận động viên
                     </th>
@@ -196,9 +193,6 @@ export default function AthleteStats() {
                             {athlete.athlete_name ? athlete.athlete_name.charAt(0).toUpperCase() : '?'}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-2 py-4 border-r border-gray-200 text-black font-mono text-sm">
-                        {athlete.athlete_id}
                       </td>
                       <td className="px-2 py-4 border-r border-gray-200 text-black">
                         {athlete.athlete_name}
