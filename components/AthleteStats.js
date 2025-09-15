@@ -154,7 +154,7 @@ export default function AthleteStats() {
                     </th>
                     {Array.from({ length: 3 }, (_, i) => {
                       const date = new Date()
-                      date.setMonth(date.getMonth() - (2 - i))
+                      date.setMonth(date.getMonth() - i)
                       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
                       return (
                         <th key={monthKey} className="px-3 py-4 text-center text-white font-semibold min-w-[80px] text-xs">
@@ -197,7 +197,7 @@ export default function AthleteStats() {
                       <td className="px-2 py-4 border-r border-gray-200 text-black">
                         {athlete.athlete_name}
                       </td>
-                      {athlete.monthly_data.map((month, monthIdx) => (
+                      {athlete.monthly_data.slice().reverse().map((month, monthIdx) => (
                         <td 
                           key={monthIdx} 
                           className={`px-3 py-4 text-center border-r border-gray-200 ${
