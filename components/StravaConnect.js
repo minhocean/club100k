@@ -930,8 +930,21 @@ export default function StravaConnect({ user }) {
   }
 
   return (
-    <button className="join-button" onClick={handleConnect}>
-      Kết nối Strava
+    <button
+      onClick={handleConnect}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer'
+      }}
+      aria-label="Connect with Strava"
+    >
+      <img
+        src="/btn_strava_connect_with_orange.png"
+        alt="Connect with Strava"
+        style={{ height: 32 }}
+      />
     </button>
   )
 }
