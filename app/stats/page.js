@@ -451,32 +451,17 @@ export default function StatsPage() {
                     onClick={handleSyncData}
                     disabled={isSyncing}
                     style={{
-                      background: 'transparent',
+                      padding: '8px 12px',
+                      backgroundColor: isSyncing ? '#9ca3af' : '#16a34a',
+                      color: 'white',
                       border: 'none',
-                      padding: 0,
                       borderRadius: '6px',
                       cursor: isSyncing ? 'not-allowed' : 'pointer',
                       opacity: isSyncing ? 0.7 : 1
                     }}
                     aria-label="Sync Strava Data"
                   >
-                    {isSyncing ? (
-                      <span style={{ 
-                        padding: '8px 12px',
-                        backgroundColor: '#9ca3af',
-                        color: 'white',
-                        borderRadius: '6px',
-                        display: 'inline-block'
-                      }}>
-                        Đang đồng bộ...
-                      </span>
-                    ) : (
-                      <img
-                        src="/btn_strava_connect_with_orange.png"
-                        alt="Sync Strava Data"
-                        style={{ height: 32 }}
-                      />
-                    )}
+                    {isSyncing ? 'Đang đồng bộ...' : 'Lấy dữ liệu Strava'}
                   </button>
                 </>
               )}
@@ -769,7 +754,7 @@ export default function StatsPage() {
         padding: '1rem',
         marginTop: '2rem'
       }}>
-        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.09!</p>
+        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.08!</p>
       </footer>
     </div>
   )
