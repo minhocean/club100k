@@ -944,26 +944,42 @@ export default function StravaConnect({ user }) {
             )}
           </div>
         )}
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+          <img
+            src="/api_logo_pwrdBy_strava_horiz_orange.png"
+            alt="Powered by Strava"
+            style={{ height: 18 }}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <button
-      onClick={handleConnect}
-      style={{
-        background: 'transparent',
-        border: 'none',
-        padding: 0,
-        cursor: 'pointer'
-      }}
-      aria-label="Connect with Strava"
-    >
-      <img
-        src="/btn_strava_connect_with_orange.png"
-        alt="Connect with Strava"
-        style={{ height: 32 }}
-      />
-    </button>
+    <div style={{ textAlign: 'center' }}>
+      <button
+        onClick={handleConnect}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer'
+        }}
+        aria-label="Connect with Strava"
+      >
+        <img
+          src="/btn_strava_connect_with_orange.png"
+          alt="Connect with Strava"
+          style={{ height: 32 }}
+        />
+      </button>
+      <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+        <img
+          src="/api_logo_pwrdBy_strava_horiz_orange.png"
+          alt="Powered by Strava"
+          style={{ height: 18 }}
+        />
+      </div>
+    </div>
   )
 }
