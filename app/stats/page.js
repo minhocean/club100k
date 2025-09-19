@@ -769,7 +769,7 @@ export default function StatsPage() {
         padding: '1rem',
         marginTop: '2rem'
       }}>
-        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.08!</p>
+        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.09!</p>
       </footer>
     </div>
   )
