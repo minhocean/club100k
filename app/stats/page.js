@@ -750,6 +750,13 @@ export default function StatsPage() {
         marginTop: '2rem'
       }}>
         <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun v0.09!</p>
+        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+          <img
+            src="/api_logo_pwrdBy_strava_horiz_orange.png"
+            alt="Powered by Strava"
+            style={{ height: 18 }}
+          />
+        </div>
       </footer>
     </div>
   )
