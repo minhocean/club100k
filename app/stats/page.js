@@ -424,8 +424,7 @@ export default function StatsPage() {
               <button
                 onClick={handleStravaConnect}
                 style={{
-                  background: strava.connected && !strava.expired ? '#FC4C02' : 'transparent',
-                  color: strava.connected && !strava.expired ? 'white' : 'inherit',
+                  background: 'transparent',
                   border: 'none',
                   padding: 0,
                   borderRadius: '6px',
@@ -435,15 +434,11 @@ export default function StatsPage() {
                 }}
                 aria-label="Connect with Strava"
               >
-                {strava.connected && !strava.expired ? (
-                  <span style={{ padding: '8px 12px', display: 'inline-block' }}>Kết nối lại</span>
-                ) : (
-                  <img
-                    src="/btn_strava_connect_with_orange.png"
-                    alt="Connect with Strava"
-                    style={{ height: 32 }}
-                  />
-                )}
+                <img
+                  src="/btn_strava_connect_with_orange.png"
+                  alt="Connect with Strava"
+                  style={{ height: 32 }}
+                />
               </button>
               {strava.connected && !strava.expired && (
                 <>

@@ -361,20 +361,39 @@ export default function StravaConnect({ user }) {
           <span className="info-value" style={{ color: status.expired ? '#dc3545' : '#28a745' }}>
             {status.expired ? 'Token hết hạn' : 'Đã kết nối'}
           </span>
-          <button 
-            onClick={status.expired ? handleConnect : checkStravaStatus}
-            style={{
-              padding: '4px 8px',
-              fontSize: '12px',
-              backgroundColor: status.expired ? '#dc3545' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {status.expired ? 'Kết nối lại' : 'Làm mới'}
-          </button>
+          {status.expired ? (
+            <button
+              onClick={handleConnect}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer'
+              }}
+              aria-label="Connect with Strava"
+            >
+              <img
+                src="/btn_strava_connect_with_orange.png"
+                alt="Connect with Strava"
+                style={{ height: 24 }}
+              />
+            </button>
+          ) : (
+            <button 
+              onClick={checkStravaStatus}
+              style={{
+                padding: '4px 8px',
+                fontSize: '12px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Làm mới
+            </button>
+          )}
         </div>
         {status.athleteId && (
           <div className="info-item">
