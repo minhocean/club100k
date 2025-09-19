@@ -451,16 +451,32 @@ export default function StatsPage() {
                     onClick={handleSyncData}
                     disabled={isSyncing}
                     style={{
-                      padding: '8px 12px',
-                      backgroundColor: isSyncing ? '#9ca3af' : '#16a34a',
-                      color: 'white',
+                      background: 'transparent',
                       border: 'none',
+                      padding: 0,
                       borderRadius: '6px',
                       cursor: isSyncing ? 'not-allowed' : 'pointer',
                       opacity: isSyncing ? 0.7 : 1
                     }}
+                    aria-label="Sync Strava Data"
                   >
-                    {isSyncing ? 'Đang đồng bộ...' : 'Lấy dữ liệu Strava'}
+                    {isSyncing ? (
+                      <span style={{ 
+                        padding: '8px 12px',
+                        backgroundColor: '#9ca3af',
+                        color: 'white',
+                        borderRadius: '6px',
+                        display: 'inline-block'
+                      }}>
+                        Đang đồng bộ...
+                      </span>
+                    ) : (
+                      <img
+                        src="/btn_strava_connect_with_orange.png"
+                        alt="Sync Strava Data"
+                        style={{ height: 32 }}
+                      />
+                    )}
                   </button>
                 </>
               )}
