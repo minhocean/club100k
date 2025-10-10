@@ -39,15 +39,20 @@ export async function GET(request) {
         sport_type,
         user_id,
         is_valid,
-        activity_type,
-        activity_date
+        activity_type
       `)
       .gte('start_date', threeMonthsAgo.toISOString())
       .order('start_date', { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to fetch activities' }, { status: 500 })
+      console.error('Error details:', error.message)
+      return NextResponse.json({ 
+        error: 'Failed to fetch activities', 
+        details: error.message,
+        hint: 'Check if is_valid and activity_type columns exist'
+      }, { status: 500 })
     }
 
     // Get unique athlete IDs and their names from strava_connections
@@ -129,7 +134,8 @@ export async function GET(request) {
             .map(activity => {
               const distance = activity.distance ? activity.distance / 1000 : 0
               const isRun = activity.activity_type === 'Run'
-              const isValid = activity.is_valid !== false
+              // Handle case where is_valid field might not exist yet
+              const isValid = activity.is_valid !== false && activity.is_valid !== null
               
               // Exclude invalid activities (except Run)
               if (!isValid && !isRun) {
@@ -140,13 +146,15 @@ export async function GET(request) {
               if (!isValid && isRun && distance > 15) {
                 return { 
                   ...activity, 
-                  distance_km: 15
+                  distance_km: 15,
+                  activity_date: activity.start_date
                 }
               }
               
               return { 
                 ...activity, 
-                distance_km: distance
+                distance_km: distance,
+                activity_date: activity.start_date
               }
             })
             .filter(a => a !== null)
@@ -159,10 +167,12 @@ export async function GET(request) {
               console.warn('Activity missing activity_date:', activity)
               return
             }
-            if (!dailyTotals[date]) {
-              dailyTotals[date] = 0
+            // Convert to YYYY-MM-DD format for consistent grouping
+            const dateStr = new Date(date).toISOString().split('T')[0]
+            if (!dailyTotals[dateStr]) {
+              dailyTotals[dateStr] = 0
             }
-            dailyTotals[date] += activity.distance_km || 0
+            dailyTotals[dateStr] += activity.distance_km || 0
           })
           
           // Cap each day at maximum 15km
