@@ -190,8 +190,7 @@ export async function GET(request) {
             activities: monthlyActivitiesCount
           }
           
-          athleteStats[athleteId].total_distance += monthlyDistance
-          athleteStats[athleteId].total_activities += monthlyActivitiesCount
+          // Don't add to total here - we'll calculate totals later for only the last 3 months
         } catch (err) {
           console.error(`Error processing month ${monthKey} for athlete ${athleteId}:`, err)
           // Fallback to simple calculation
@@ -207,8 +206,7 @@ export async function GET(request) {
             activities: monthActivities.length
           }
           
-          athleteStats[athleteId].total_distance += monthlyDistance
-          athleteStats[athleteId].total_activities += monthActivities.length
+          // Don't add to total here - we'll calculate totals later for only the last 3 months
         }
       })
     })
@@ -219,22 +217,34 @@ export async function GET(request) {
     const statsArray = Object.values(athleteStats).map(athlete => {
       // Ensure last 3 months are represented
       const monthlyData = []
+      let totalDistance = 0
+      let totalActivities = 0
+      
       for (let i = 2; i >= 0; i--) {
         const date = new Date()
         date.setMonth(date.getMonth() - i)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
         
+        const monthDistance = athlete.monthly_stats[monthKey]?.distance || 0
+        const monthActivities = athlete.monthly_stats[monthKey]?.activities || 0
+        
         monthlyData.push({
           month: monthKey,
-          distance: athlete.monthly_stats[monthKey]?.distance || 0,
-          activities: athlete.monthly_stats[monthKey]?.activities || 0,
-          isLow: (athlete.monthly_stats[monthKey]?.distance || 0) < 100
+          distance: monthDistance,
+          activities: monthActivities,
+          isLow: monthDistance < 100
         })
+        
+        // Calculate totals for only the last 3 months
+        totalDistance += monthDistance
+        totalActivities += monthActivities
       }
       
       return {
         ...athlete,
         monthly_data: monthlyData,
+        total_distance: totalDistance,
+        total_activities: totalActivities,
         current_month_distance: athlete.monthly_stats[currentMonth]?.distance || 0
       }
     })
