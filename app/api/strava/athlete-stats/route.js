@@ -86,18 +86,22 @@ export async function GET(request) {
     const athleteMonthlyActivities = {}
     
     activities.forEach(activity => {
-      const athleteId = activity.athlete_id
-      const date = new Date(activity.start_date)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      
-      if (!athleteMonthlyActivities[athleteId]) {
-        athleteMonthlyActivities[athleteId] = {}
+      try {
+        const athleteId = activity.athlete_id
+        const date = new Date(activity.start_date)
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        
+        if (!athleteMonthlyActivities[athleteId]) {
+          athleteMonthlyActivities[athleteId] = {}
+        }
+        if (!athleteMonthlyActivities[athleteId][monthKey]) {
+          athleteMonthlyActivities[athleteId][monthKey] = []
+        }
+        
+        athleteMonthlyActivities[athleteId][monthKey].push(activity)
+      } catch (err) {
+        console.warn('Error processing activity:', activity, err)
       }
-      if (!athleteMonthlyActivities[athleteId][monthKey]) {
-        athleteMonthlyActivities[athleteId][monthKey] = []
-      }
-      
-      athleteMonthlyActivities[athleteId][monthKey].push(activity)
     })
 
     // Process each athlete's monthly data with new validation rules
@@ -117,56 +121,85 @@ export async function GET(request) {
       }
       
       Object.keys(athleteMonthlyActivities[athleteId]).forEach(monthKey => {
-        const monthActivities = athleteMonthlyActivities[athleteId][monthKey]
-        
-        // Rule 1 & 2: Filter and process activities (exclude invalid except Run, cap Run invalid at 15km)
-        const processedActivities = monthActivities
-          .map(activity => {
-            const distance = activity.distance ? activity.distance / 1000 : 0
-            const isRun = activity.activity_type === 'Run'
-            const isValid = activity.is_valid !== false
-            
-            // Exclude invalid activities (except Run)
-            if (!isValid && !isRun) {
-              return null
+        try {
+          const monthActivities = athleteMonthlyActivities[athleteId][monthKey]
+          
+          // Rule 1 & 2: Filter and process activities (exclude invalid except Run, cap Run invalid at 15km)
+          const processedActivities = monthActivities
+            .map(activity => {
+              const distance = activity.distance ? activity.distance / 1000 : 0
+              const isRun = activity.activity_type === 'Run'
+              const isValid = activity.is_valid !== false
+              
+              // Exclude invalid activities (except Run)
+              if (!isValid && !isRun) {
+                return null
+              }
+              
+              // Handle invalid Run: cap at 15km
+              if (!isValid && isRun && distance > 15) {
+                return { 
+                  ...activity, 
+                  distance_km: 15
+                }
+              }
+              
+              return { 
+                ...activity, 
+                distance_km: distance
+              }
+            })
+            .filter(a => a !== null)
+          
+          // Rule 3: Group by day and cap daily total at 15km
+          const dailyTotals = {}
+          processedActivities.forEach(activity => {
+            const date = activity.activity_date
+            if (!date) {
+              console.warn('Activity missing activity_date:', activity)
+              return
             }
-            
-            // Handle invalid Run: cap at 15km
-            if (!isValid && isRun && distance > 15) {
-              return { ...activity, distance_km: 15, activity_date: activity.activity_date }
+            if (!dailyTotals[date]) {
+              dailyTotals[date] = 0
             }
-            
-            return { ...activity, distance_km: distance, activity_date: activity.activity_date }
+            dailyTotals[date] += activity.distance_km || 0
           })
-          .filter(a => a !== null)
-        
-        // Rule 3: Group by day and cap daily total at 15km
-        const dailyTotals = {}
-        processedActivities.forEach(activity => {
-          const date = activity.activity_date
-          if (!dailyTotals[date]) {
-            dailyTotals[date] = 0
+          
+          // Cap each day at maximum 15km
+          Object.keys(dailyTotals).forEach(date => {
+            dailyTotals[date] = Math.min(dailyTotals[date], 15)
+          })
+          
+          // Calculate monthly totals
+          const monthlyDistance = Object.values(dailyTotals).reduce((sum, val) => sum + val, 0)
+          const monthlyActivitiesCount = processedActivities.length
+          
+          athleteStats[athleteId].monthly_stats[monthKey] = {
+            month: monthKey,
+            distance: monthlyDistance,
+            activities: monthlyActivitiesCount
           }
-          dailyTotals[date] += activity.distance_km
-        })
-        
-        // Cap each day at maximum 15km
-        Object.keys(dailyTotals).forEach(date => {
-          dailyTotals[date] = Math.min(dailyTotals[date], 15)
-        })
-        
-        // Calculate monthly totals
-        const monthlyDistance = Object.values(dailyTotals).reduce((sum, val) => sum + val, 0)
-        const monthlyActivitiesCount = processedActivities.length
-        
-        athleteStats[athleteId].monthly_stats[monthKey] = {
-          month: monthKey,
-          distance: monthlyDistance,
-          activities: monthlyActivitiesCount
+          
+          athleteStats[athleteId].total_distance += monthlyDistance
+          athleteStats[athleteId].total_activities += monthlyActivitiesCount
+        } catch (err) {
+          console.error(`Error processing month ${monthKey} for athlete ${athleteId}:`, err)
+          // Fallback to simple calculation
+          const monthActivities = athleteMonthlyActivities[athleteId][monthKey]
+          const monthlyDistance = monthActivities.reduce((sum, activity) => {
+            const distance = activity.distance ? activity.distance / 1000 : 0
+            return sum + distance
+          }, 0)
+          
+          athleteStats[athleteId].monthly_stats[monthKey] = {
+            month: monthKey,
+            distance: monthlyDistance,
+            activities: monthActivities.length
+          }
+          
+          athleteStats[athleteId].total_distance += monthlyDistance
+          athleteStats[athleteId].total_activities += monthActivities.length
         }
-        
-        athleteStats[athleteId].total_distance += monthlyDistance
-        athleteStats[athleteId].total_activities += monthlyActivitiesCount
       })
     })
 
@@ -206,6 +239,11 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error stack:', error.stack)
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: error.message,
+      stack: error.stack 
+    }, { status: 500 })
   }
 }
