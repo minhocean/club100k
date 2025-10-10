@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request) {
+  // Temporary flag to test with/without new validation logic
+  const USE_NEW_VALIDATION = false
+  
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -129,35 +132,49 @@ export async function GET(request) {
         try {
           const monthActivities = athleteMonthlyActivities[athleteId][monthKey]
           
-          // Rule 1 & 2: Filter and process activities (exclude invalid except Run, cap Run invalid at 15km)
-          const processedActivities = monthActivities
-            .map(activity => {
-              const distance = activity.distance ? activity.distance / 1000 : 0
-              const isRun = activity.activity_type === 'Run'
-              // Handle case where is_valid field might not exist yet
-              const isValid = activity.is_valid !== false && activity.is_valid !== null
-              
-              // Exclude invalid activities (except Run)
-              if (!isValid && !isRun) {
-                return null
-              }
-              
-              // Handle invalid Run: cap at 15km
-              if (!isValid && isRun && distance > 15) {
+          // Debug logging
+          console.log(`Processing month ${monthKey} for athlete ${athleteId}: ${monthActivities.length} activities`)
+          
+          let processedActivities
+          
+          if (USE_NEW_VALIDATION) {
+            // Rule 1 & 2: Filter and process activities (exclude invalid except Run, cap Run invalid at 15km)
+            processedActivities = monthActivities
+              .map(activity => {
+                const distance = activity.distance ? activity.distance / 1000 : 0
+                const isRun = activity.activity_type === 'Run'
+                // Handle case where is_valid field might not exist yet
+                const isValid = activity.is_valid !== false && activity.is_valid !== null
+                
+                // Exclude invalid activities (except Run)
+                if (!isValid && !isRun) {
+                  return null
+                }
+                
+                // Handle invalid Run: cap at 15km
+                if (!isValid && isRun && distance > 15) {
+                  return { 
+                    ...activity, 
+                    distance_km: 15,
+                    activity_date: activity.start_date
+                  }
+                }
+                
                 return { 
                   ...activity, 
-                  distance_km: 15,
+                  distance_km: distance,
                   activity_date: activity.start_date
                 }
-              }
-              
-              return { 
-                ...activity, 
-                distance_km: distance,
-                activity_date: activity.start_date
-              }
-            })
-            .filter(a => a !== null)
+              })
+              .filter(a => a !== null)
+          } else {
+            // Simple processing without validation rules
+            processedActivities = monthActivities.map(activity => ({
+              ...activity,
+              distance_km: activity.distance ? activity.distance / 1000 : 0,
+              activity_date: activity.start_date
+            }))
+          }
           
           // Rule 3: Group by day and cap daily total at 15km
           const dailyTotals = {}
@@ -173,6 +190,9 @@ export async function GET(request) {
               dailyTotals[dateStr] = 0
             }
             dailyTotals[dateStr] += activity.distance_km || 0
+            
+            // Debug logging for daily totals
+            console.log(`Activity ${activity.name}: date=${dateStr}, distance=${activity.distance_km}`)
           })
           
           // Cap each day at maximum 15km
@@ -183,6 +203,9 @@ export async function GET(request) {
           // Calculate monthly totals
           const monthlyDistance = Object.values(dailyTotals).reduce((sum, val) => sum + val, 0)
           const monthlyActivitiesCount = processedActivities.length
+          
+          // Debug logging
+          console.log(`Month ${monthKey} result: ${monthlyActivitiesCount} activities, ${monthlyDistance.toFixed(2)}km`)
           
           athleteStats[athleteId].monthly_stats[monthKey] = {
             month: monthKey,
@@ -199,6 +222,8 @@ export async function GET(request) {
             const distance = activity.distance ? activity.distance / 1000 : 0
             return sum + distance
           }, 0)
+          
+          console.log(`Fallback calculation for ${monthKey}: ${monthActivities.length} activities, ${monthlyDistance.toFixed(2)}km`)
           
           athleteStats[athleteId].monthly_stats[monthKey] = {
             month: monthKey,
@@ -227,6 +252,9 @@ export async function GET(request) {
         
         const monthDistance = athlete.monthly_stats[monthKey]?.distance || 0
         const monthActivities = athlete.monthly_stats[monthKey]?.activities || 0
+        
+        // Debug logging
+        console.log(`Athlete ${athleteId}, Month ${monthKey}: distance=${monthDistance}, activities=${monthActivities}`)
         
         monthlyData.push({
           month: monthKey,
