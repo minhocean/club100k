@@ -83,36 +83,46 @@ export async function GET(request) {
     const athleteStats = {}
     
     activities.forEach(activity => {
-      const athleteId = activity.athlete_id
-      const date = new Date(activity.start_date)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      const distance = activity.distance ? activity.distance / 1000 : 0 // Convert to km
-      
-      if (!athleteStats[athleteId]) {
-        const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
-        athleteStats[athleteId] = {
-          athlete_id: athleteId,
-          athlete_name: athleteInfo.name,
-          profile_medium: athleteInfo.profile_medium,
-          profile_large: athleteInfo.profile_large,
-          monthly_stats: {},
-          total_distance: 0,
-          total_activities: 0
+      // Rule: Only process 'Run' activities.
+      if (activity.sport_type === 'Run') {
+        const rawDistance = activity.distance ? activity.distance / 1000 : 0
+
+        // Rule: Only include runs that are 3km or longer.
+        if (rawDistance >= 3) {
+          const athleteId = activity.athlete_id
+          const date = new Date(activity.start_date)
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          
+          // Rule: Cap the distance at 15km for summation.
+          const distance = Math.min(rawDistance, 15)
+
+          if (!athleteStats[athleteId]) {
+            const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
+            athleteStats[athleteId] = {
+              athlete_id: athleteId,
+              athlete_name: athleteInfo.name,
+              profile_medium: athleteInfo.profile_medium,
+              profile_large: athleteInfo.profile_large,
+              monthly_stats: {},
+              total_distance: 0,
+              total_activities: 0
+            }
+          }
+          
+          if (!athleteStats[athleteId].monthly_stats[monthKey]) {
+            athleteStats[athleteId].monthly_stats[monthKey] = {
+              month: monthKey,
+              distance: 0,
+              activities: 0
+            }
+          }
+          
+          athleteStats[athleteId].monthly_stats[monthKey].distance += distance
+          athleteStats[athleteId].monthly_stats[monthKey].activities += 1
+          athleteStats[athleteId].total_distance += distance
+          athleteStats[athleteId].total_activities += 1
         }
       }
-      
-      if (!athleteStats[athleteId].monthly_stats[monthKey]) {
-        athleteStats[athleteId].monthly_stats[monthKey] = {
-          month: monthKey,
-          distance: 0,
-          activities: 0
-        }
-      }
-      
-      athleteStats[athleteId].monthly_stats[monthKey].distance += distance
-      athleteStats[athleteId].monthly_stats[monthKey].activities += 1
-      athleteStats[athleteId].total_distance += distance
-      athleteStats[athleteId].total_activities += 1
     })
 
     // Convert to array and sort by current month's distance
