@@ -333,6 +333,7 @@ export default function AthleteStats() {
                           // Debug: Log high volume days
                           if (isHighVolumeDay) {
                             console.log(`High volume day detected: ${activity.activity_date}, Run distance: ${dayRunDistance}km`)
+                            console.log(`Activity: ${activity.name}, Type: ${activity.activity_type}`)
                           }
                           
                           return (
@@ -343,6 +344,7 @@ export default function AthleteStats() {
                               isHighVolumeDay ? 'bg-orange-200 border-orange-300' :
                               (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50')
                             }`}
+                            style={isHighVolumeDay ? { backgroundColor: '#fed7aa', border: '2px solid #fb923c' } : {}}
                           >
                             <td className={`px-3 py-3 text-center border-r border-gray-200 font-semibold w-[4ch] max-w-[4ch] ${
                               isInvalid ? 'text-red-600' : 
