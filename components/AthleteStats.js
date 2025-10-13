@@ -355,71 +355,85 @@ export default function AthleteStats() {
                             className={`transition-colors duration-200 ${
                               isInvalid ? 'bg-red-50' : 
                               isHighVolumeDay ? 'bg-orange-200 border-orange-300' :
+                              activity.activity_type !== 'Run' ? 'bg-red-100 border-red-300' :
                               (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50')
                             }`}
-                            style={isHighVolumeDay ? { backgroundColor: '#fed7aa', border: '2px solid #fb923c' } : {}}
+                            style={isHighVolumeDay ? { backgroundColor: '#fed7aa', border: '2px solid #fb923c' } : 
+                                   activity.activity_type !== 'Run' ? { backgroundColor: '#fee2e2', border: '2px solid #f87171' } : {}}
                           >
                             <td className={`px-3 py-3 text-center border-r border-gray-200 font-semibold w-[4ch] max-w-[4ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               {idx + 1}
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 font-mono text-sm whitespace-nowrap ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               {activity.strava_activity_id}
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               {activity.name}
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 text-right whitespace-nowrap w-[7ch] max-w-[7ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span className="inline-block w-full text-right">{activity.distance_km}</span>
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 text-right whitespace-nowrap w-[6ch] max-w-[6ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               {pace !== null ? pace.toFixed(1) : '-'}
                             </td>
                           
                             <td className={`px-3 py-3 border-r border-gray-200 text-right whitespace-nowrap w-[8ch] max-w-[8ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span className="inline-block w-full text-right">{activity.duration_minutes}</span>
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span className="inline-block w-full">{activity.activity_date}</span>
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span className="inline-block w-full">{activity.start_time || '-'}</span>
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span className="inline-block w-full">{activity.end_time || '-'}</span>
                             </td>
                             <td className={`px-3 py-3 whitespace-nowrap w-[5ch] max-w-[5ch] text-center ${
                               isInvalid ? 'text-red-600' : 
-                              isHighVolumeDay ? 'text-orange-800' : 'text-black'
+                              isHighVolumeDay ? 'text-orange-800' : 
+                              activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
                               <span title={activity.activity_type}>
-                                {isHighVolumeDay ? '🔥' : mapActivityTypeToIcon(activity.activity_type)}
+                                {isHighVolumeDay ? '🔥' : 
+                                 activity.activity_type !== 'Run' ? '⚠️' : 
+                                 mapActivityTypeToIcon(activity.activity_type)}
                               </span>
                             </td>
                             <td className="px-3 py-3 text-center border-r border-gray-200 w-[4ch] max-w-[4ch]">
