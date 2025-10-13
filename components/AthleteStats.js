@@ -319,12 +319,28 @@ export default function AthleteStats() {
                           
                           const isHighVolumeDay = dayRunDistance > 15
                           
+                          // Debug: Log all activities and calculations
+                          if (idx === 0) {
+                            console.log('Sample activity data:', {
+                              activity_date: activity.activity_date,
+                              activity_type: activity.activity_type,
+                              distance_km: activity.distance_km,
+                              dayRunDistance: dayRunDistance,
+                              isHighVolumeDay: isHighVolumeDay
+                            })
+                          }
+                          
+                          // Debug: Log high volume days
+                          if (isHighVolumeDay) {
+                            console.log(`High volume day detected: ${activity.activity_date}, Run distance: ${dayRunDistance}km`)
+                          }
+                          
                           return (
                           <tr 
                             key={idx} 
                             className={`transition-colors duration-200 ${
                               isInvalid ? 'bg-red-50' : 
-                              isHighVolumeDay ? 'bg-orange-100' :
+                              isHighVolumeDay ? 'bg-orange-200 border-orange-300' :
                               (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50')
                             }`}
                           >
@@ -387,7 +403,9 @@ export default function AthleteStats() {
                               isInvalid ? 'text-red-600' : 
                               isHighVolumeDay ? 'text-orange-800' : 'text-black'
                             }`}>
-                              <span title={activity.activity_type}>{mapActivityTypeToIcon(activity.activity_type)}</span>
+                              <span title={activity.activity_type}>
+                                {isHighVolumeDay ? '🔥' : mapActivityTypeToIcon(activity.activity_type)}
+                              </span>
                             </td>
                             <td className="px-3 py-3 text-center border-r border-gray-200 w-[4ch] max-w-[4ch]">
                               {isInvalid ? (
