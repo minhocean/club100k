@@ -1,7 +1,3 @@
 {
-  "/not-found": "app/not-found.js",
-  "/stats/page": "app/stats/page.js",
-  "/api/strava/connections/route": "app/api/strava/connections/route.js",
-  "/api/strava/athlete-stats/route": "app/api/strava/athlete-stats/route.js",
-  "/api/strava/status/route": "app/api/strava/status/route.js"
+  "/stats/page": "app/stats/page.js"
 }
