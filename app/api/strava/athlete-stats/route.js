@@ -96,8 +96,13 @@ export async function GET(request) {
           const timeInMinutes = timeInSeconds / 60
           const pace = rawDistance > 0 ? timeInMinutes / rawDistance : null
           
+          // Debug: Log all Run activities
+          console.log(`Run activity: ${activity.name}, Distance: ${rawDistance}km, Pace: ${pace?.toFixed(1)} min/km, Date: ${activity.start_date}`)
+          
           // Rule: For Run activities, only include if pace is between 3 and 15 minutes per km
           if (pace !== null && pace >= 3 && pace <= 15) {
+            // Debug: Log activities being processed
+            console.log(`Processing activity: ${activity.name}, Distance: ${rawDistance}km, Pace: ${pace?.toFixed(1)} min/km, Date: ${activity.start_date}`)
             const athleteId = activity.athlete_id
             const date = new Date(activity.start_date)
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
