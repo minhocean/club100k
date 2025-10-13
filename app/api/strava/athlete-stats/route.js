@@ -37,7 +37,9 @@ export async function GET(request) {
         start_date,
         name,
         sport_type,
-        user_id
+        user_id,
+        moving_time,
+        elapsed_time
       `)
       .gte('start_date', threeMonthsAgo.toISOString())
       .order('start_date', { ascending: false })
@@ -89,12 +91,20 @@ export async function GET(request) {
 
         // Rule: Only include runs that are 3km or longer.
         if (rawDistance >= 3) {
-          const athleteId = activity.athlete_id
-          const date = new Date(activity.start_date)
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          // Calculate pace for Run activities
+          const timeInSeconds = activity.moving_time || activity.elapsed_time || 0
+          const timeInMinutes = timeInSeconds / 60
+          const pace = rawDistance > 0 ? timeInMinutes / rawDistance : null
           
-          // Rule: Cap the distance at 15km for summation.
-          const distance = Math.min(rawDistance, 15)
+          // Rule: For Run activities, only include if pace is between 3 and 15 minutes per km
+          if (pace !== null && pace >= 3 && pace <= 15) {
+            const athleteId = activity.athlete_id
+            const date = new Date(activity.start_date)
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+            const dayOfMonth = date.getDate()
+            
+            // Rule: Cap the distance at 15km for summation.
+            const distance = Math.min(rawDistance, 15)
 
           if (!athleteStats[athleteId]) {
             const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
@@ -113,14 +123,23 @@ export async function GET(request) {
             athleteStats[athleteId].monthly_stats[monthKey] = {
               month: monthKey,
               distance: 0,
-              activities: 0
+              activities_first_half: 0,  // 1-20
+              activities_second_half: 0  // 21-end
             }
           }
           
-          athleteStats[athleteId].monthly_stats[monthKey].distance += distance
-          athleteStats[athleteId].monthly_stats[monthKey].activities += 1
-          athleteStats[athleteId].total_distance += distance
-          athleteStats[athleteId].total_activities += 1
+            athleteStats[athleteId].monthly_stats[monthKey].distance += distance
+            
+            // Count activities by half month
+            if (dayOfMonth <= 20) {
+              athleteStats[athleteId].monthly_stats[monthKey].activities_first_half += 1
+            } else {
+              athleteStats[athleteId].monthly_stats[monthKey].activities_second_half += 1
+            }
+            
+            athleteStats[athleteId].total_distance += distance
+            athleteStats[athleteId].total_activities += 1
+          }
         }
       }
     })
@@ -136,10 +155,17 @@ export async function GET(request) {
         date.setMonth(date.getMonth() - i)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
         
+        const firstHalf = athlete.monthly_stats[monthKey]?.activities_first_half || 0
+        const secondHalf = athlete.monthly_stats[monthKey]?.activities_second_half || 0
+        const totalActivities = firstHalf + secondHalf
+        
         monthlyData.push({
           month: monthKey,
           distance: athlete.monthly_stats[monthKey]?.distance || 0,
-          activities: athlete.monthly_stats[monthKey]?.activities || 0,
+          activities: `${firstHalf}/${totalActivities}`,
+          activities_first_half: firstHalf,
+          activities_second_half: secondHalf,
+          total_activities: totalActivities,
           isLow: (athlete.monthly_stats[monthKey]?.distance || 0) < 100
         })
       }
