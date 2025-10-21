@@ -749,7 +749,7 @@ export default function StatsPage() {
         padding: '1rem',
         marginTop: '2rem'
       }}>
-        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun Hanoi edition v0.17!</p>
+        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun Hanoi edition v0.18!</p>
         <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
           <img
             src="/api_logo_pwrdBy_strava_horiz_orange.png"

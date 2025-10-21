@@ -84,69 +84,94 @@ export async function GET(request) {
     // Group activities by athlete and calculate monthly statistics
     const athleteStats = {}
     
+    // First pass: Calculate daily totals for each athlete and date
+    const dailyTotals = {}
+    
     activities.forEach(activity => {
-      // Rule: Only process 'Run' activities.
       if (activity.sport_type === 'Run') {
         const rawDistance = activity.distance ? activity.distance / 1000 : 0
-
-        // Rule: Only include runs that are 3km or longer.
+        
         if (rawDistance >= 3) {
-          // Calculate pace for Run activities
           const timeInSeconds = activity.moving_time || activity.elapsed_time || 0
           const timeInMinutes = timeInSeconds / 60
           const pace = rawDistance > 0 ? timeInMinutes / rawDistance : null
           
-          // Debug: Log all Run activities
-          console.log(`Run activity: ${activity.name}, Distance: ${rawDistance}km, Pace: ${pace?.toFixed(1)} min/km, Date: ${activity.start_date}`)
-          
-          // Rule: For Run activities, only include if pace is between 3 and 15 minutes per km
           if (pace !== null && pace >= 3 && pace <= 15) {
-            // Debug: Log activities being processed
-            console.log(`Processing activity: ${activity.name}, Distance: ${rawDistance}km, Pace: ${pace?.toFixed(1)} min/km, Date: ${activity.start_date}`)
             const athleteId = activity.athlete_id
             const date = new Date(activity.start_date)
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-            const dayOfMonth = date.getDate()
+            const dateKey = `${athleteId}-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
             
-            // Rule: Cap the distance at 15km for summation.
-            const distance = Math.min(rawDistance, 15)
-
-          if (!athleteStats[athleteId]) {
-            const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
-            athleteStats[athleteId] = {
-              athlete_id: athleteId,
-              athlete_name: athleteInfo.name,
-              profile_medium: athleteInfo.profile_medium,
-              profile_large: athleteInfo.profile_large,
-              monthly_stats: {},
-              total_distance: 0,
-              total_activities: 0
-            }
-          }
-          
-          if (!athleteStats[athleteId].monthly_stats[monthKey]) {
-            athleteStats[athleteId].monthly_stats[monthKey] = {
-              month: monthKey,
-              distance: 0,
-              activities_first_half: 0,  // 1-20
-              activities_second_half: 0  // 21-end
-            }
-          }
-          
-            athleteStats[athleteId].monthly_stats[monthKey].distance += distance
-            
-            // Count activities by half month
-            if (dayOfMonth <= 20) {
-              athleteStats[athleteId].monthly_stats[monthKey].activities_first_half += 1
-            } else {
-              athleteStats[athleteId].monthly_stats[monthKey].activities_second_half += 1
+            if (!dailyTotals[dateKey]) {
+              dailyTotals[dateKey] = { athleteId, date, totalDistance: 0, activities: [] }
             }
             
-            athleteStats[athleteId].total_distance += distance
-            athleteStats[athleteId].total_activities += 1
+            dailyTotals[dateKey].totalDistance += rawDistance
+            dailyTotals[dateKey].activities.push({ ...activity, rawDistance, pace })
           }
         }
       }
+    })
+    
+    // Second pass: Apply daily 15km cap and calculate monthly stats
+    const athleteStats = {}
+    
+    Object.values(dailyTotals).forEach(dayData => {
+      const { athleteId, date, totalDistance, activities } = dayData
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const dayOfMonth = date.getDate()
+      
+      // Rule: Cap daily total at 15km
+      const cappedDailyTotal = Math.min(totalDistance, 15)
+      const dailyCapApplied = totalDistance > 15
+      
+      if (dailyCapApplied) {
+        console.log(`Daily cap applied: ${athleteId} on ${date.toISOString().split('T')[0]}: ${totalDistance}km -> ${cappedDailyTotal}km`)
+      }
+      
+      // Distribute the capped total proportionally among activities
+      const activitiesCount = activities.length
+      const distancePerActivity = activitiesCount > 0 ? cappedDailyTotal / activitiesCount : 0
+      
+      activities.forEach(activity => {
+        const distance = distancePerActivity
+
+        if (!athleteStats[athleteId]) {
+          const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
+          athleteStats[athleteId] = {
+            athlete_id: athleteId,
+            athlete_name: athleteInfo.name,
+            profile_medium: athleteInfo.profile_medium,
+            profile_large: athleteInfo.profile_large,
+            monthly_stats: {},
+            total_distance: 0,
+            total_activities: 0
+          }
+        }
+        
+        if (!athleteStats[athleteId].monthly_stats[monthKey]) {
+          athleteStats[athleteId].monthly_stats[monthKey] = {
+            month: monthKey,
+            distance: 0,
+            activities_first_half: 0,  // 1-20
+            activities_second_half: 0  // 21-end
+          }
+        }
+        
+        athleteStats[athleteId].monthly_stats[monthKey].distance += distance
+        
+        // Count activities by half month
+        if (dayOfMonth <= 20) {
+          athleteStats[athleteId].monthly_stats[monthKey].activities_first_half += 1
+        } else {
+          athleteStats[athleteId].monthly_stats[monthKey].activities_second_half += 1
+        }
+        
+        athleteStats[athleteId].total_distance += distance
+        athleteStats[athleteId].total_activities += 1
+        
+        // Debug: Log monthly totals
+        console.log(`Added to ${monthKey}: ${distance.toFixed(2)}km (daily total: ${totalDistance}km -> ${cappedDailyTotal}km), Monthly total: ${athleteStats[athleteId].monthly_stats[monthKey].distance.toFixed(2)}km`)
+      })
     })
 
     // Convert to array and sort by current month's distance
