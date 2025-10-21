@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
 import { STRAVA } from '../../../../lib/stravaEnv'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Strava webhook verification: GET with hub.mode, hub.challenge, hub.verify_token
 export async function GET(request) {

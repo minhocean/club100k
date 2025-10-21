@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
 import { STRAVA } from '../../../../lib/stravaEnv'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request) {
   const url = new URL(request.url)

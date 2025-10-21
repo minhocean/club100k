@@ -5,6 +5,7 @@ import { STRAVA } from '../../../../lib/stravaEnv'
 import { decodeJwtPayload } from '../../../../lib/jwtFallback'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request) {
   console.log('[STRAVA_START] ===== STRAVA START REQUEST =====')

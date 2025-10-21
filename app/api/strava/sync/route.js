@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 async function refreshTokenIfNeeded(conn) {
   const nowSec = Math.floor(Date.now() / 1000)

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../../lib/supabaseAdmin'
 import { decodeJwtPayload } from '../../../lib/jwtFallback'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // GET: Fetch notifications for the current user
 export async function GET(request) {

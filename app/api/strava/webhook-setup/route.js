@@ -4,6 +4,7 @@ import { STRAVA } from '../../../../lib/stravaEnv'
 import { decodeJwtPayload } from '../../../../lib/jwtFallback'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Helper function to force cleanup inactive webhooks
 async function forceCleanupInactiveWebhooks() {

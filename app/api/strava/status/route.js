@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
 import { decodeJwtPayload } from '../../../../lib/jwtFallback'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request) {
   console.log('[STRAVA_STATUS] ===== STATUS CHECK STARTED =====')
