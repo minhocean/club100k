@@ -330,10 +330,11 @@ export default function AthleteStats() {
                             })
                           }
                           
-                          // Debug: Log specific date calculations for 4/10/2025
-                          if (activity.activity_date === '4/10/2025') {
-                            const runActivities = athleteActivities.filter(a => a.activity_date === '4/10/2025' && a.activity_type === 'Run')
-                            console.log(`Date 4/10/2025 calculation:`, {
+                          // Debug: Log specific date calculations for high volume days
+                          if (activity.activity_date === '16/10/2025' || activity.activity_date === '15/10/2025' || 
+                              activity.activity_date === '5/10/2025' || activity.activity_date === '3/10/2025') {
+                            const runActivities = athleteActivities.filter(a => a.activity_date === activity.activity_date && a.activity_type === 'Run')
+                            console.log(`Date ${activity.activity_date} calculation:`, {
                               activity_name: activity.name,
                               activity_type: activity.activity_type,
                               distance_km: activity.distance_km,
