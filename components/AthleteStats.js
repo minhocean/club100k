@@ -318,6 +318,7 @@ export default function AthleteStats() {
                             .reduce((sum, a) => sum + (Number(a.distance_km) || 0), 0)
                           
                           const isHighVolumeDay = dayRunDistance > 15
+                          const isDuplicate = activity.is_duplicate
                           
                           // Debug: Log all activities and calculations
                           if (idx === 0) {
@@ -355,15 +356,18 @@ export default function AthleteStats() {
                             key={idx} 
                             className={`transition-colors duration-200 ${
                               isInvalid ? 'bg-red-50' : 
+                              isDuplicate ? 'bg-yellow-100 border-yellow-300' :
                               isHighVolumeDay ? 'bg-orange-200 border-orange-300' :
                               activity.activity_type !== 'Run' ? 'bg-red-100 border-red-300' :
                               (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50')
                             }`}
-                            style={isHighVolumeDay ? { backgroundColor: '#fed7aa', border: '2px solid #fb923c' } : 
+                            style={isDuplicate ? { backgroundColor: '#fef3c7', border: '2px solid #f59e0b' } :
+                                   isHighVolumeDay ? { backgroundColor: '#fed7aa', border: '2px solid #fb923c' } : 
                                    activity.activity_type !== 'Run' ? { backgroundColor: '#fee2e2', border: '2px solid #f87171' } : {}}
                           >
                             <td className={`px-3 py-3 text-center border-r border-gray-200 font-semibold w-[4ch] max-w-[4ch] ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -371,6 +375,7 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 font-mono text-sm whitespace-nowrap ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -400,6 +405,7 @@ export default function AthleteStats() {
                           
                             <td className={`px-3 py-3 border-r border-gray-200 text-right whitespace-nowrap w-[8ch] max-w-[8ch] ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -407,6 +413,7 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -414,6 +421,7 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -421,6 +429,7 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 border-r border-gray-200 whitespace-nowrap w-[12ch] max-w-[12ch] ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
@@ -428,11 +437,13 @@ export default function AthleteStats() {
                             </td>
                             <td className={`px-3 py-3 whitespace-nowrap w-[5ch] max-w-[5ch] text-center ${
                               isInvalid ? 'text-red-600' : 
+                              isDuplicate ? 'text-yellow-800' :
                               isHighVolumeDay ? 'text-orange-800' : 
                               activity.activity_type !== 'Run' ? 'text-red-800' : 'text-black'
                             }`}>
-                              <span title={activity.activity_type}>
-                                {isHighVolumeDay ? '🔥' : 
+                              <span title={isDuplicate ? 'Hoạt động trùng lặp' : activity.activity_type}>
+                                {isDuplicate ? '🔄' :
+                                 isHighVolumeDay ? '🔥' : 
                                  activity.activity_type !== 'Run' ? '⚠️' : 
                                  mapActivityTypeToIcon(activity.activity_type)}
                               </span>
@@ -444,6 +455,13 @@ export default function AthleteStats() {
                                   title="Hoạt động không hợp lệ"
                                 >
                                   ✕
+                                </span>
+                              ) : isDuplicate ? (
+                                <span 
+                                  className="inline-flex items-center justify-center w-6 h-6 bg-yellow-500 text-white text-xs font-bold rounded-full"
+                                  title="Hoạt động trùng lặp"
+                                >
+                                  🔄
                                 </span>
                               ) : (
                                 <span 

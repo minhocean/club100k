@@ -116,7 +116,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 - Email: your-email@example.com
 - GitHub: [@yourusername](https://github.com/yourusername)
-
-git add.
-git commit -m "Fix .."
-git push -u origin main
+git add .
+git commit -m "fix: Resolve build errors and add dynamic exports for Vercel deployment"
+git push origin main

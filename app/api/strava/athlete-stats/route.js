@@ -119,22 +119,47 @@ export async function GET(request) {
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       const dayOfMonth = date.getDate()
       
-      // Rule: Cap daily total at 15km
-      const cappedDailyTotal = Math.min(totalDistance, 15)
-      const dailyCapApplied = totalDistance > 15
-      
-      if (dailyCapApplied) {
-        console.log(`Daily cap applied: ${athleteId} on ${date.toISOString().split('T')[0]}: ${totalDistance}km -> ${cappedDailyTotal}km`)
-      }
-      
-      // Distribute the capped total proportionally among activities
-      const activitiesCount = activities.length
-      const distancePerActivity = activitiesCount > 0 ? cappedDailyTotal / activitiesCount : 0
+      // Rule: Remove duplicate activities (same km, pace, duration)
+      const uniqueActivities = []
+      const seenActivities = new Set()
       
       activities.forEach(activity => {
-        const distance = distancePerActivity
+        const activityKey = `${activity.rawDistance.toFixed(2)}-${activity.pace.toFixed(1)}-${activity.moving_time || activity.elapsed_time}`
+        
+        if (!seenActivities.has(activityKey)) {
+          seenActivities.add(activityKey)
+          uniqueActivities.push({ ...activity, isDuplicate: false })
+        } else {
+          // Mark as duplicate for UI warning
+          uniqueActivities.push({ ...activity, isDuplicate: true })
+          console.log(`Duplicate activity detected: ${activity.name} (${activity.rawDistance}km, ${activity.pace.toFixed(1)}min/km)`)
+        }
+      })
+      
+      // Recalculate total distance with unique activities only
+      const uniqueTotalDistance = uniqueActivities
+        .filter(activity => !activity.isDuplicate)
+        .reduce((sum, activity) => sum + activity.rawDistance, 0)
+      
+      // Rule: Cap daily total at 15km
+      const cappedDailyTotal = Math.min(uniqueTotalDistance, 15)
+      const dailyCapApplied = uniqueTotalDistance > 15
+      
+      if (dailyCapApplied) {
+        console.log(`Daily cap applied: ${athleteId} on ${date.toISOString().split('T')[0]}: ${uniqueTotalDistance}km -> ${cappedDailyTotal}km`)
+      }
+      
+      // Distribute the capped total proportionally among unique activities only
+      const uniqueActivitiesCount = uniqueActivities.filter(activity => !activity.isDuplicate).length
+      const distancePerActivity = uniqueActivitiesCount > 0 ? cappedDailyTotal / uniqueActivitiesCount : 0
+      
+      // Only process unique activities for monthly totals
+      uniqueActivities
+        .filter(activity => !activity.isDuplicate)
+        .forEach(activity => {
+          const distance = distancePerActivity
 
-        if (!athleteStats[athleteId]) {
+          if (!athleteStats[athleteId]) {
           const athleteInfo = athleteUserMap[athleteId] || { name: `Athlete ${athleteId}`, profile_medium: null, profile_large: null }
           athleteStats[athleteId] = {
             athlete_id: athleteId,
@@ -169,7 +194,7 @@ export async function GET(request) {
         athleteStats[athleteId].total_activities += 1
         
         // Debug: Log monthly totals
-        console.log(`Added to ${monthKey}: ${distance.toFixed(2)}km (daily total: ${totalDistance}km -> ${cappedDailyTotal}km), Monthly total: ${athleteStats[athleteId].monthly_stats[monthKey].distance.toFixed(2)}km`)
+        console.log(`Added to ${monthKey}: ${distance.toFixed(2)}km (daily total: ${uniqueTotalDistance}km -> ${cappedDailyTotal}km), Monthly total: ${athleteStats[athleteId].monthly_stats[monthKey].distance.toFixed(2)}km`)
       })
     })
 

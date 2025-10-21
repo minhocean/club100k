@@ -63,6 +63,42 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Failed to fetch activities' }, { status: 500 })
     }
 
+    // Group activities by date to detect duplicates
+    const activitiesByDate = {}
+    activities.forEach(activity => {
+      const activityDate = activity.start_date_local 
+        ? new Date(activity.start_date_local).toLocaleDateString('vi-VN') 
+        : (activity.start_date ? new Date(activity.start_date).toLocaleDateString('vi-VN') : 'N/A')
+      
+      if (!activitiesByDate[activityDate]) {
+        activitiesByDate[activityDate] = []
+      }
+      activitiesByDate[activityDate].push(activity)
+    })
+
+    // Detect duplicates within each date
+    const seenActivities = new Set()
+    const duplicateActivities = new Set()
+    
+    Object.values(activitiesByDate).forEach(dayActivities => {
+      const daySeen = new Set()
+      
+      dayActivities.forEach(activity => {
+        const distance = activity.distance ? (activity.distance / 1000) : 0
+        const duration = activity.moving_time || activity.elapsed_time || 0
+        const pace = distance > 0 ? (duration / 60) / distance : 0
+        
+        const activityKey = `${distance.toFixed(2)}-${pace.toFixed(1)}-${duration}`
+        
+        if (daySeen.has(activityKey)) {
+          duplicateActivities.add(activity.strava_activity_id)
+          console.log(`Duplicate activity detected: ${activity.name} (${distance.toFixed(2)}km, ${pace.toFixed(1)}min/km)`)
+        } else {
+          daySeen.add(activityKey)
+        }
+      })
+    })
+
     const formattedActivities = activities.map(activity => ({
       strava_activity_id: activity.strava_activity_id,
       name: activity.name,
@@ -84,7 +120,8 @@ export async function GET(request) {
         .join(', ') || 'Không xác định',
       calories: activity.calories || 0,
       elevation_gain: activity.total_elevation_gain || 0,
-      is_valid: activity.is_valid
+      is_valid: activity.is_valid,
+      is_duplicate: duplicateActivities.has(activity.strava_activity_id)
     }))
 
     return NextResponse.json({ 
