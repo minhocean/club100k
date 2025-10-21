@@ -37,6 +37,7 @@ export async function GET(request) {
         athlete_id,
         distance,
         start_date,
+        start_date_local,
         name,
         sport_type,
         user_id,
@@ -97,7 +98,7 @@ export async function GET(request) {
           
           if (pace !== null && pace >= 3 && pace <= 15) {
             const athleteId = activity.athlete_id
-            const date = new Date(activity.start_date)
+            const date = activity.start_date_local ? new Date(activity.start_date_local) : new Date(activity.start_date)
             const dateKey = `${athleteId}-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
             
             if (!dailyTotals[dateKey]) {
