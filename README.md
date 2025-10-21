@@ -119,4 +119,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 git add.
 git commit -m "Fix .."
-git push
+git push -u origin main

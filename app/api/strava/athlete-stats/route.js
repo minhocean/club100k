@@ -83,9 +83,6 @@ export async function GET(request) {
       }
     })
 
-    // Group activities by athlete and calculate monthly statistics
-    const athleteStats = {}
-    
     // First pass: Calculate daily totals for each athlete and date
     const dailyTotals = {}
     
