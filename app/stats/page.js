@@ -16,6 +16,8 @@ export default function StatsPage() {
   const [processedActivities, setProcessedActivities] = useState([])
   const [connections, setConnections] = useState([])
   const [error, setError] = useState(null)
+  const [countdownData, setCountdownData] = useState(null)
+  const [loadingCountdown, setLoadingCountdown] = useState(false)
 
   const checkStravaStatus = async () => {
     try {
@@ -56,6 +58,28 @@ export default function StatsPage() {
     }
   }
 
+  const loadCountdown = async () => {
+    setLoadingCountdown(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+
+      const res = await fetch(`/api/strava/total-distance?sb=${encodeURIComponent(token)}`)
+      const json = await res.json()
+      
+      if (json.error) {
+        console.error('Error loading countdown:', json.error)
+      } else {
+        setCountdownData(json)
+      }
+    } catch (e) {
+      console.error('Error loading countdown:', e)
+    } finally {
+      setLoadingCountdown(false)
+    }
+  }
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -63,6 +87,7 @@ export default function StatsPage() {
         setUser(session.user)
         await checkStravaStatus()
         await loadConnections()
+        await loadCountdown()
       }
       setLoading(false)
     }
@@ -367,6 +392,203 @@ export default function StatsPage() {
             </div>
           </div>
         )}
+
+        {/* 100K Countdown Section */}
+        <section style={{
+          backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '16px',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+          padding: '24px',
+          margin: '16px',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '-50px',
+            right: '-50px',
+            width: '200px',
+            height: '200px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '50%',
+            zIndex: 0
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '-30px',
+            left: '-30px',
+            width: '150px',
+            height: '150px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '50%',
+            zIndex: 0
+          }}></div>
+          
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div>
+                <h2 style={{ 
+                  fontSize: '24px', 
+                  fontWeight: 'bold', 
+                  margin: '0 0 8px 0',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}>
+                  🎯 Mục tiêu 100,000 km
+                </h2>
+                <p style={{ 
+                  fontSize: '14px', 
+                  opacity: 0.9, 
+                  margin: 0,
+                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }}>
+                  Đếm ngược đến cột mốc kỷ niệm
+                </p>
+              </div>
+              <button
+                onClick={loadCountdown}
+                disabled={loadingCountdown}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '8px',
+                  cursor: loadingCountdown ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s ease',
+                  opacity: loadingCountdown ? 0.6 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!loadingCountdown) {
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loadingCountdown) {
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'
+                  }
+                }}
+              >
+                {loadingCountdown ? '⏳ Đang tải...' : '🔄 Làm mới'}
+              </button>
+            </div>
+
+            {loadingCountdown ? (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px 0',
+                fontSize: '16px',
+                opacity: 0.9
+              }}>
+                Đang tính toán...
+              </div>
+            ) : countdownData ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px', fontWeight: '500' }}>
+                    Tổng km từ 2/12/2025
+                  </div>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '4px' }}>
+                    {countdownData.distance_since_base.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} km
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.8 }}>
+                    (Từ ngày 2/12/2025)
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px', fontWeight: '500' }}>
+                    Tổng km hiện tại
+                  </div>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '4px' }}>
+                    {countdownData.current_total.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} km
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.8 }}>
+                    (96,823 + {countdownData.distance_since_base.toFixed(2)})
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: countdownData.remaining_km > 0 ? 'rgba(255, 215, 0, 0.3)' : 'rgba(76, 175, 80, 0.3)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: countdownData.remaining_km > 0 ? '2px solid rgba(255, 215, 0, 0.5)' : '2px solid rgba(76, 175, 80, 0.5)',
+                  boxShadow: countdownData.remaining_km > 0 ? '0 4px 15px rgba(255, 215, 0, 0.3)' : '0 4px 15px rgba(76, 175, 80, 0.3)'
+                }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px', fontWeight: '500' }}>
+                    {countdownData.remaining_km > 0 ? 'Còn lại' : '🎉 Đã đạt mục tiêu!'}
+                  </div>
+                  <div style={{ 
+                    fontSize: countdownData.remaining_km > 1000 ? '28px' : '36px', 
+                    fontWeight: 'bold', 
+                    marginBottom: '4px',
+                    color: countdownData.remaining_km > 0 ? '#FFD700' : '#4CAF50',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}>
+                    {countdownData.remaining_km > 0 
+                      ? `${countdownData.remaining_km.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} km`
+                      : '0 km'
+                    }
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.8 }}>
+                    {countdownData.remaining_km > 0 
+                      ? `Còn ${((countdownData.remaining_km / 100000) * 100).toFixed(2)}% để đạt mục tiêu`
+                      : 'Chúc mừng câu lạc bộ! 🎊'
+                    }
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px 0',
+                fontSize: '16px',
+                opacity: 0.9
+              }}>
+                Không thể tải dữ liệu đếm ngược
+              </div>
+            )}
+
+            {countdownData && (
+              <div style={{ 
+                marginTop: '16px', 
+                padding: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                fontSize: '12px',
+                opacity: 0.9,
+                textAlign: 'center'
+              }}>
+                <strong>Thông tin:</strong> Tổng km đến ngày 2/12/2025 là 96,823 km. 
+                Dữ liệu được tính từ các hoạt động hợp lệ (Run, 3-15km, pace 3-15 min/km) với giới hạn 15km/ngày.
+                <br />
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>
+                  Cập nhật lần cuối: {new Date(countdownData.calculated_at).toLocaleString('vi-VN')}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Athlete (user) info section similar to Profile */}
         <section style={{
@@ -749,7 +971,7 @@ export default function StatsPage() {
         padding: '1rem',
         marginTop: '2rem'
       }}>
-        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun Ha Noi edition v0.21!</p>
+        <p style={{ margin: 0 }}>&copy; 2025 Sport Club 100k. Have fun Ha Noi edition v0.22!</p>
         <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
           <img
             src="/api_logo_pwrdBy_strava_horiz_orange.png"
